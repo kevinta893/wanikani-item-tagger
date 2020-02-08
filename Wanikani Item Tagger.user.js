@@ -6,6 +6,9 @@
 // @run-at      document-end
 // @include     https://www.wanikani.com/review/session
 // @include     https://www.wanikani.com/lesson/session
+// @include     https://www.wanikani.com/radicals/*
+// @include     https://www.wanikani.com/kanji/*
+// @include     https://www.wanikani.com/vocabulary/*
 // @version     0.0.1
 // @run-at      document-end
 // @grant       GM_setValue
@@ -32,14 +35,38 @@ function initialize(){
 
 var cssString = `
   .tag{
+    display: inline-block;
+    margin-right: 0.5em;
+    background-color: #AA00FF;
+    color: #eee;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
   }
-  .favorite-svg{
+  .user-tag-add-btn {
+    cursor: pointer;
+    margin-left: 0.3em;
+  }
+  .user-tag-add-btn:before {
+    content: '+ ADD TAG';
+    margin-right: 0.5em;
+    padding: 0.15em 0.3em;
+    background-color: #999;
+    color: #eee;
+    -webkit-transition: background-color 0.3s linear;
+    -moz-transition: background-color 0.3s linear;
+    -o-transition: background-color 0.3s linear;
+    transition: background-color 0.3s linear;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
   }
 `;
 
 class TaggerUi{
   tagManager;
   tagInputField;
+  tagList;
 
   constructor(tagManager){
 
@@ -48,29 +75,102 @@ class TaggerUi{
     //Add CSS
     GM_addStyle(cssString);
 
-    //Add UI
-    var rootTagEditElement = '#supplement-voc-meaning > div > div.pure-u-1-4.col1';
+    //Add UI (depending on page)
+    var pageUrl = window.location.href;
+    if (pageUrl.indexOf('wanikani.com/review/session') >= 0){
+      // Review
+    } else if (pageUrl.indexOf('wanikani.com/lesson/session') >= 0){
+      // Lesson 
+      var rootElement = $('#supplement-voc-meaning > div > div.pure-u-1-4.col1');
 
-    // Tag section Title
-    var tagSectionHeader = $('<h2></h2>');
-    tagSectionHeader.text('Tags');
+      // Tag section Title
+      var tagSectionHeader = $('<h2></h2>');
+      tagSectionHeader.text('Tags');
 
-    // Tag section
-    var tagSectionContents = $('<div></div>');
+      // Tag section
+      var tagSectionContents = $('<div></div>');
 
-    var tagInputField = $('<input></input>');
-    tagInputField.attr('id', 'custom-tag-list');
-    tagInputField.addClass('noSwipe');
-    tagSectionContents.append(tagInputField);
-    this.tagInputField = tagInputField;
+      var tagInputField = $('<input></input>');
+      tagInputField.attr('id', 'custom-tag-list');
+      tagInputField.addClass('noSwipe');
+      tagSectionContents.append(tagInputField);
+      this.tagInputField = tagInputField;
 
-    //Append UI elements
-    $(rootTagEditElement).append(tagSectionHeader);
-    $(rootTagEditElement).append(tagSectionContents);
+      //Append UI elements
+      rootElement.append(tagSectionHeader);
+      rootElement.append(tagSectionContents);
+    } else if (
+      pageUrl.indexOf('wanikani.com/radicals') ||
+      pageUrl.indexOf('wanikani.com/kanji') ||
+      pageUrl.indexOf('wanikani.com/vocabulary')
+    ){
+      // Wanikani item definition pages
+      var rootElement = $('#information');
+
+      var tagSection = $('<div></div>');
+      tagSection.addClass('alternative-meaning')
+
+      var tagSectionTitle = $('<h2></h2>');
+      tagSectionTitle.text('Tags');
+      var tagInputButton = $('<li></li>')
+      tagInputButton.addClass('user-tag-add-btn');
+      tagInputButton.attr('title', 'Add your own tags');
+      tagInputButton.attr('style', 'display: inline-block;');
+
+      var addTagFormRoot = $('<li></li>');
+      addTagFormRoot.attr('style', 'display: inline-block;');
+      addTagFormRoot.hide();
+
+      var tagInput = $('<input></input>');
+      tagInput.attr('type', 'text');
+      tagInput.attr('autocaptialize', 'none');
+      tagInput.attr('autocomplete', 'off');
+      tagInput.attr('spellcheck', 'off');
+      tagInput.attr('autocorrect', 'false');
+
+      var addTagButton = $('<button></button>');
+      addTagButton.addClass('user-tag-add-btn');
+
+      addTagFormRoot.append(tagInput);
+      addTagFormRoot.append(addTagButton);
+
+
+      tagInputButton.on('click', () => {
+        tagInputButton.hide();
+        addTagFormRoot.show();
+        tagInput.val('');
+
+        tagInput.focus();
+      });
+
+      addTagButton.on('click', () => {
+        var newTagText = tagInput.val();
+        console.log(newTagText);
+        //TODO!!!! sanitize(newTagText);
+        tagInput.val('');
+        tagInputButton.show();
+        addTagFormRoot.hide();
+
+        this.addTagToUi(newTagText);
+        this.saveTag(newTagText);
+      });
+
+      var ulButtonParent = $('<ul></ul>');
+      ulButtonParent.append(tagInputButton);
+      ulButtonParent.append(addTagFormRoot);
+
+      tagSection.append(tagSectionTitle);
+      tagSection.append(ulButtonParent);
+      
+      this.tagList = ulButtonParent;
+      rootElement.append(tagSection);
+    } else {
+      console.log('Cannot attach UI, invalid page');
+    }
 
     //Item changed event handler
     var updateTagInfo = this.updateTagInfo;
-    var itemChangedEvent = function(key, callback){
+    var itemChangedEvent = (key, callback) => {
       var currentItem = $.jStorage.get(key);
       var taggerItem = mapTaggerItem(currentItem);
 
@@ -82,7 +182,31 @@ class TaggerUi{
     $.jStorage.listenKeyChange('l/currentLesson', itemChangedEvent);
   }
 
-  updateTagInfo(item){
+  addTagToUi(tagText){
+    var newTag = $('<li></li>');
+    //TODO Sanitize html
+    newTag.addClass('tag');
+    newTag.attr('title', 'Click to remove tag');
+    newTag.text(tagText);
+    newTag.data('tag', tagText);
+    newTag.on('click', newTag.remove);
+
+    this.tagList.find('li.user-tag-add-btn').before(newTag);
+    this.saveTag(tagText);
+  }
+
+  removeTag(){
+
+  }
+
+  saveTag(tagText){
+    var rawWkData = this.getCurrentWanikaniItemData();
+    var wkItemData = mapToTaggerItem(rawWkData);
+    this.tagManager.updateItemTag(wkItemData, tagText);
+  }
+
+  getCurrentWanikaniItemData(){
+    return $.jStorage.get('currentItem');
   }
 }
 
@@ -104,38 +228,45 @@ class TaggerItemDTO{
 
   //Wanikani app official fields
   itemType = '';
-  partOfSpeech = [];
+  displayName = '';
   level = -1;
 
   //Item Tagger fields
-  userTags = [];
+  tags = [];
 
   constructor(){
   }
 }
 
 /**
- * Converts a wanikani item data object from local storage
+ * Factory function that converts a wanikani item data object from local storage
  * and maps it to the DTO object WanikaniItem.
  * @param {} currentItem A wanikani item data object from local storage
  */
-function mapTaggerItem(wkItem){
+function mapToTaggerItem(wkItem){
   var taggerItem = new TaggerItemDTO();
 
-  taggerItem.level = wkItem.level;
-
-  //Map item type
+  //Determine type and the name
+  var itemType;
+  var itemDisplayName;
   if (wkItem.hasOwnProperty('voc')){
-    taggerItem.type = ItemTypes.Vocabulary;
+    itemType = ItemTypes.Vocabulary;
+    itemDisplayName = wkItem.voc;
   }
   else if (wkItem.hasOwnProperty('kan')){
-    taggerItem.type = ItemTypes.Kanji;
+    itemType = ItemTypes.Kanji;
+    itemDisplayName = wkItem.kan;
   }
   else if (wkItem.hasOwnProperty('rad')){
-    taggerItem.type = ItemTypes.Radical;
+    itemType = ItemTypes.Radical;
+    itemDisplayName = wkItem.rad;
   }
-  
-  return wkItem;
+
+  taggerItem.displayName = itemDisplayName;
+  taggerItem.type = itemType;
+  taggerItem.level = wkItem.level;
+
+  return taggerItem;
 }
 
 //===================================================
@@ -147,37 +278,18 @@ function mapTaggerItem(wkItem){
  */
 class TagManager{
   tagRepository;
-  tagData;
-
+  
   constructor(){
     this.tagRepository = new TagRepository();
-    this.tagData = this.tagRepository.readTags();
   }
 
-  addTag(reviewItem, tag){
-    //Add tag to existing tags
-    if (this.tagData.hasProperty(reviewItem)){
-      var item = this.tagData[reviewItem];
-      item.tags.append(tag);
-    }
-  
-    //Create a new tag
-    var newItem = {
-      reviewItem : reviewItem,
-      tags : []
-    };
-    this.tagData[reviewItem] = newItem;
+  updateItemTag(tagItemDto, tag){
+    tagItemDto.tags.push(tag);
+    this.tagRepository.saveTag(tagItemDto);
   }
 
-  removeTag(reviewItem, tag){
-    if (this.tagData.hasProperty(reviewItem)){
-      var item = this.tagData[reviewItem];
-      item.tags.remove(tag);
-    }
-  }
-
-  saveTagData(){
-    this.tagRepository.saveTags(this.tagData);
+  getItemTags(tagItemDto){
+    this.tagRepository.getTag(tagItemDto);
   }
 }
 
@@ -189,19 +301,25 @@ class TagManager{
  * Manages raw tag data, storing and reading raw data
  */
 class TagRepository{
-  tagDataStoreKey = "wanikani-item-tagger-tag-data";
+  tagDataStoreKey = "tag-data";
   dataContext;
 
   constructor(){
-    this.dataContext = new TamperMonkeyDataContext();
+    this.dataContext = new TamperMonkeyUserDataContext();
   }
 
-  saveTags(tagData){
-    this.dataContext.writeData(this.tagDataStoreKey, tagData);
+  saveTag(tagItemDto){
+    var key = this.generateStoreKey(tagItemDto);
+    this.dataContext.writeData(key, tagItemDto);
   }
 
-  readTags(){
-    return this.dataContext.readData(this.tagDataStoreKey);
+  getTag(tagItemDto){
+    var key = this.generateStoreKey(tagItemDto);
+    return this.dataContext.readData(key);
+  }
+
+  generateStoreKey(tagItemDto){
+    return `${this.tagDataStoreKey}/${tagItemDto.type.toLowerCase()}/${tagItemDto.displayName}`;
   }
 }
 
@@ -211,10 +329,9 @@ class TagRepository{
 /**
  * Saves/retrieves data to user data storage
  */
-class TamperMonkeyDataContext{
+class TamperMonkeyUserDataContext{
 
   constructor(){
-
   }
 
   writeData(key, value){
