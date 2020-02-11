@@ -164,6 +164,16 @@ class TaggerUi{
       
       this.tagList = ulButtonParent;
       rootElement.append(tagSection);
+
+      // Load tag data to page
+      var url = new URL(window.location.href);
+      var pageUrlPathParts = url.pathname.split('/');
+      var itemType = pageUrlPathParts[1];
+      var itemName = decodeURIComponent(pageUrlPathParts[2]);
+      var tags = this.tagManager.getItemTags(itemType, itemName);
+      tags.forEach((elem) => {
+        this.addTagToUi(elem);
+      });
     } else {
       console.log('Cannot attach UI, invalid page');
     }
@@ -192,7 +202,6 @@ class TaggerUi{
     newTag.on('click', newTag.remove);
 
     this.tagList.find('li.user-tag-add-btn').before(newTag);
-    this.saveTag(tagText);
   }
 
   removeTag(){
@@ -206,7 +215,15 @@ class TaggerUi{
   }
 
   getCurrentWanikaniItemData(){
-    return $.jStorage.get('currentItem');
+    // TODO Move this to a "data provider" kind of class
+    // For fetching raw data off the current page
+    var url = new URL(window.location.href);
+    var pageUrlPathParts = url.pathname.split('/');
+    var itemType = pageUrlPathParts[1];
+    var itemName = decodeURIComponent(pageUrlPathParts[2]);
+    var fakeWkData = {};
+    fakeWkData.voc = itemName;
+    return fakeWkData;
   }
 }
 
@@ -288,8 +305,8 @@ class TagManager{
     this.tagRepository.saveTag(tagItemDto);
   }
 
-  getItemTags(tagItemDto){
-    this.tagRepository.getTag(tagItemDto);
+  getItemTags(itemType, itemName){
+    return this.tagRepository.getTags(itemType, itemName);
   }
 }
 
@@ -309,17 +326,22 @@ class TagRepository{
   }
 
   saveTag(tagItemDto){
-    var key = this.generateStoreKey(tagItemDto);
+    var key = this.generateStoreKeyFromDto(tagItemDto);
     this.dataContext.writeData(key, tagItemDto);
   }
 
-  getTag(tagItemDto){
-    var key = this.generateStoreKey(tagItemDto);
-    return this.dataContext.readData(key);
+  getTags(itemType, itemName){
+    var key = this.generateStoreKey(itemType, itemName);
+    var itemData = this.dataContext.readData(key);
+    return itemData == null ? [] : itemData.tags;
   }
 
-  generateStoreKey(tagItemDto){
-    return `${this.tagDataStoreKey}/${tagItemDto.type.toLowerCase()}/${tagItemDto.displayName}`;
+  generateStoreKey(itemType, itemName){
+    return `${this.tagDataStoreKey}/${itemType.toLowerCase()}/${itemName}`;
+  }
+
+  generateStoreKeyFromDto(tagItemDto){
+    return this.generateStoreKey(tagItemDto.type, tagItemDto.displayName);
   }
 }
 
