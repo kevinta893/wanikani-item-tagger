@@ -35,7 +35,10 @@ function initialize(){
 
 var cssString = `
   .tag{
+    cursor: pointer;
     display: inline-block;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
     margin-right: 0.5em;
     background-color: #AA00FF;
     color: #eee;
@@ -199,20 +202,31 @@ class TaggerUi{
     newTag.attr('title', 'Click to remove tag');
     newTag.attr('value', tagText);
     newTag.text(tagText);
-    newTag.on('click', newTag.remove);
+    newTag.on('click', () => {
+      this.removeTag(tagText);
+    });
 
     this.tagList.find('li.user-tag-add-btn').before(newTag);
   }
 
-  removeTag(){
+  removeTag(tagText){
+    var rawWkData = this.getCurrentWanikaniItemData();
+    var currentTags = Array.from(this.tagList.find('.tag').map((i, tagElem) => $(tagElem).attr('value')));
+    this.tagList.find(`.tag[value="${tagText}"]`).remove();
 
+    var remainingTags = currentTags.filter((tag) => tag != tagText);
+
+    var itemData = mapToTaggerItem(rawWkData, remainingTags);
+    this.tagManager.updateItemTags(itemData);
   }
 
   saveTag(tagText){
     var rawWkData = this.getCurrentWanikaniItemData();
     var currentTags = Array.from(this.tagList.find('.tag').map((i, tagElem) => $(tagElem).attr('value')));
-    var wkItemData = mapToTaggerItem(rawWkData, currentTags);
-    this.tagManager.updateItemTag(wkItemData, tagText);
+    
+    var itemData = mapToTaggerItem(rawWkData, currentTags);
+    itemData.tags.push(tagText);
+    this.tagManager.updateItemTags(itemData);
   }
 
   getCurrentWanikaniItemData(){
@@ -306,8 +320,7 @@ class TagManager{
     this.tagRepository = new TagRepository();
   }
 
-  updateItemTag(tagItemDto, tag){
-    tagItemDto.tags.push(tag);
+  updateItemTags(tagItemDto){
     this.tagRepository.saveTag(tagItemDto);
   }
 
