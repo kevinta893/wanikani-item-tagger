@@ -151,8 +151,8 @@ class TaggerUi{
         tagInputButton.show();
         addTagFormRoot.hide();
 
-        this.addTagToUi(newTagText);
         this.saveTag(newTagText);
+        this.addTagToUi(newTagText);
       });
 
       var ulButtonParent = $('<ul></ul>');
@@ -197,8 +197,8 @@ class TaggerUi{
     //TODO Sanitize html
     newTag.addClass('tag');
     newTag.attr('title', 'Click to remove tag');
+    newTag.attr('value', tagText);
     newTag.text(tagText);
-    newTag.data('tag', tagText);
     newTag.on('click', newTag.remove);
 
     this.tagList.find('li.user-tag-add-btn').before(newTag);
@@ -210,7 +210,8 @@ class TaggerUi{
 
   saveTag(tagText){
     var rawWkData = this.getCurrentWanikaniItemData();
-    var wkItemData = mapToTaggerItem(rawWkData);
+    var currentTags = Array.from(this.tagList.find('.tag').map((i, tagElem) => $(tagElem).attr('value')));
+    var wkItemData = mapToTaggerItem(rawWkData, currentTags);
     this.tagManager.updateItemTag(wkItemData, tagText);
   }
 
@@ -258,10 +259,14 @@ class TaggerItemDTO{
 /**
  * Factory function that converts a wanikani item data object from local storage
  * and maps it to the DTO object WanikaniItem.
- * @param {} currentItem A wanikani item data object from local storage
+ * @param {} wkItem A wanikani item data object from local storage
+ * @param {Array} currentTags (optional) An array/list of current user defined tags associated with the item, otherwise it is an empty list
  */
-function mapToTaggerItem(wkItem){
+function mapToTaggerItem(wkItem, currentTags){
   var taggerItem = new TaggerItemDTO();
+
+  //Current tags is default
+  if (currentTags == null){ currentTags = []; }
 
   //Determine type and the name
   var itemType;
@@ -282,7 +287,8 @@ function mapToTaggerItem(wkItem){
   taggerItem.displayName = itemDisplayName;
   taggerItem.type = itemType;
   taggerItem.level = wkItem.level;
-
+  taggerItem.tags = currentTags;
+  
   return taggerItem;
 }
 
