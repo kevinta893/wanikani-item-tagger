@@ -25,8 +25,8 @@ var tagManager;
 
 //Loads user script
 function initialize(){
-  tagManager = new TagManager();
-  taggerUi = new TaggerUi(tagManager);
+  tagManager = new TagController();
+  taggerUi = new TaggerUiManager(tagManager);
 }
 
 
@@ -45,6 +45,9 @@ var cssString = `
     -webkit-border-radius: 3px;
     -moz-border-radius: 3px;
     border-radius: 3px;
+  }
+  .tag:hover{
+
   }
   .user-tag-add-btn {
     cursor: pointer;
@@ -66,20 +69,83 @@ var cssString = `
   }
 `;
 
-class TaggerUi{
+class TaggerUiManager{
   tagManager;
   tagInputField;
   tagList;
-
+  tagUi;
+  
   constructor(tagManager){
 
     this.tagManager = tagManager;
 
+    //Generate UI based on page location
+    var pageUrl = window.location.href;
+    this.tagUi = new TaggerUiFactory().createTaggerUi(pageUrl);
+
     //Add CSS
     GM_addStyle(cssString);
+    GM_addStyle(this.tagUi.css);
 
+    //Listen to tag add or remove events, save updated tags
+    this.tagUi.onTagAdd((tagText) => {
+      this.saveTag(tagText);
+    });
+    this.tagUi.onTagRemove((tagText) => {
+      this.removeTag(tagText);
+    });
+
+    //Item changed event handler
+    var itemChangedEvent = (key, callback) => {
+      var currentItem = $.jStorage.get(key);
+      var taggerItem = mapTaggerItem(currentItem);
+
+      var currentTags = this.tagManager.getCurrentTags(ItemTypes.Vocabulary, "");
+      this.tagUi.removeAllTags(taggerItem);
+      this.tagUi.loadTagsToUi(tags);
+    }
+
+    //Every time item changes, update the tag list
+    $.jStorage.listenKeyChange('currentItem', itemChangedEvent);
+    $.jStorage.listenKeyChange('l/currentLesson', itemChangedEvent);
+
+    // Load tag data to page
+    var url = new URL(window.location.href);
+    var pageUrlPathParts = url.pathname.split('/');
+    var itemType = pageUrlPathParts[1];
+    var itemName = decodeURIComponent(pageUrlPathParts[2]);
+    var tags = this.tagManager.getItemTags(itemType, itemName);
+    this.tagUi.loadTagsToUi(tags);
+  }
+
+  removeTag(tagText){
+    var rawWkData = this.tagUi.getCurrentWkItem();
+    var currentTags = this.tagUi.getCurrentTags();
+
+    var itemData = mapToTaggerItem(rawWkData, currentTags);
+    this.tagManager.updateItemTags(itemData);
+  }
+
+  saveTag(tagText){
+    var rawWkData = this.tagUi.getCurrentWkItem();
+    var currentTags = this.tagUi.getCurrentTags();
+    
+    var itemData = mapToTaggerItem(rawWkData, currentTags);
+    this.tagManager.updateItemTags(itemData);
+  }
+}
+
+/**
+ * Creates a tagger UI based on the page
+ * that the script is current on
+ */
+class TaggerUiFactory{
+  constructor(){
+
+  }
+
+  createTaggerUi(pageUrl){
     //Add UI (depending on page)
-    var pageUrl = window.location.href;
     if (pageUrl.indexOf('wanikani.com/review/session') >= 0){
       // Review
     } else if (pageUrl.indexOf('wanikani.com/lesson/session') >= 0){
@@ -108,94 +174,197 @@ class TaggerUi{
       pageUrl.indexOf('wanikani.com/vocabulary')
     ){
       // Wanikani item definition pages
-      var rootElement = $('#information');
-
-      var tagSection = $('<div></div>');
-      tagSection.addClass('alternative-meaning')
-
-      var tagSectionTitle = $('<h2></h2>');
-      tagSectionTitle.text('Tags');
-      var tagInputButton = $('<li></li>')
-      tagInputButton.addClass('user-tag-add-btn');
-      tagInputButton.attr('title', 'Add your own tags');
-      tagInputButton.attr('style', 'display: inline-block;');
-
-      var addTagFormRoot = $('<li></li>');
-      addTagFormRoot.attr('style', 'display: inline-block;');
-      addTagFormRoot.hide();
-
-      var tagInput = $('<input></input>');
-      tagInput.attr('type', 'text');
-      tagInput.attr('autocaptialize', 'none');
-      tagInput.attr('autocomplete', 'off');
-      tagInput.attr('spellcheck', 'off');
-      tagInput.attr('autocorrect', 'false');
-
-      var addTagButton = $('<button></button>');
-      addTagButton.addClass('user-tag-add-btn');
-
-      addTagFormRoot.append(tagInput);
-      addTagFormRoot.append(addTagButton);
-
-
-      tagInputButton.on('click', () => {
-        tagInputButton.hide();
-        addTagFormRoot.show();
-        tagInput.val('');
-
-        tagInput.focus();
-      });
-
-      addTagButton.on('click', () => {
-        var newTagText = tagInput.val();
-        console.log(newTagText);
-        //TODO!!!! sanitize(newTagText);
-        tagInput.val('');
-        tagInputButton.show();
-        addTagFormRoot.hide();
-
-        this.saveTag(newTagText);
-        this.addTagToUi(newTagText);
-      });
-
-      var ulButtonParent = $('<ul></ul>');
-      ulButtonParent.append(tagInputButton);
-      ulButtonParent.append(addTagFormRoot);
-
-      tagSection.append(tagSectionTitle);
-      tagSection.append(ulButtonParent);
-      
-      this.tagList = ulButtonParent;
-      rootElement.append(tagSection);
-
-      // Load tag data to page
-      var url = new URL(window.location.href);
-      var pageUrlPathParts = url.pathname.split('/');
-      var itemType = pageUrlPathParts[1];
-      var itemName = decodeURIComponent(pageUrlPathParts[2]);
-      var tags = this.tagManager.getItemTags(itemType, itemName);
-      tags.forEach((elem) => {
-        this.addTagToUi(elem);
-      });
+      return new DefinitionTaggerUi();
     } else {
-      console.log('Cannot attach UI, invalid page');
+      console.error('Cannot attach UI, invalid page');
     }
+  }
+}
 
-    //Item changed event handler
-    var updateTagInfo = this.updateTagInfo;
-    var itemChangedEvent = (key, callback) => {
-      var currentItem = $.jStorage.get(key);
-      var taggerItem = mapTaggerItem(currentItem);
+/**
+ * The tagger UI that handles displaying tags
+ * to the user and accepting new tag input
+ * Depending on the page (e.g. review, lesson, definition), 
+ * this UI may have a different structure per page
+ * When constructed, the subclasses of this UI should
+ * self attach itself to the page.
+ */
+class BaseTaggerUi{
 
-      updateTagInfo(taggerItem);
-    }
+  /**
+   * Additional CSS to add
+   */
+  css = ``;
+  listenersTagAdded = [];
+  listenersTagRemoved = [];
 
-    //Every time item changes, update the tag list
-    $.jStorage.listenKeyChange('currentItem', itemChangedEvent);
-    $.jStorage.listenKeyChange('l/currentLesson', itemChangedEvent);
+  constructor(){
+
   }
 
-  addTagToUi(tagText){
+  addTag(tagText){
+    //Private
+  }
+
+  removeTag(tagText){
+    //Private
+  }
+
+  /**
+   * Loads a list of tag strings to the UI
+   * for display
+   * @param {Array} tagList 
+   */
+  loadTagsToUi(tagList){
+  }
+
+  triggerTagAddEvent(tagText){
+    //Private
+    this.listenersTagAdded.forEach(func => {
+      func(tagText);
+    });
+  }
+
+  triggerTagRemoveEvent(tagText){
+    //Private
+    this.listenersTagRemoved.forEach(func => {
+      func(tagText);
+    });
+  }
+
+  /**
+   * Adds a callback for when the UI recieves
+   * a new tag entered by the user
+   * @param {function} callback 
+   */
+  onTagAdd(callback){
+    this.listenersTagAdded.push(callback);
+  }
+
+  /**
+   * Adds a callback for when the UI recieves
+   * a new tag is removed by the user
+   * @param {function} callback 
+   */
+  onTagRemove(callback){
+    this.listenersTagRemoved.push(callback);
+  }
+
+  /**
+   * Gets the current tag strings that are 
+   * being displayed by the UI currently
+   */
+  getCurrentTags(){
+
+  }
+
+  /**
+   * Gets the current WaniKani item data from the page
+   */
+  getCurrentWkItem(){
+
+  }
+}
+
+/**
+ * UI for the definition pages on Wanikani
+ * For radicals, kanji, and vocabulary pages
+ */
+class DefinitionTaggerUi extends BaseTaggerUi{
+
+  rootElement;
+  css = ``;
+
+  constructor(){
+    super();
+
+    //Configure the UI for the definition page
+    var rootElement = $('#information');
+
+    var tagSection = $('<div></div>');
+    tagSection.addClass('alternative-meaning')
+
+    var tagSectionTitle = $('<h2></h2>');
+    tagSectionTitle.text('Tags');
+
+    //Input tag button
+    var tagInputButton = $('<li></li>')
+    tagInputButton.addClass('user-tag-add-btn');
+    tagInputButton.attr('title', 'Add your own tags');
+    tagInputButton.attr('style', 'display: inline-block;');
+
+    var addTagFormRoot = $('<li></li>');
+    addTagFormRoot.attr('style', 'display: inline-block;');
+    addTagFormRoot.hide();
+
+    //Tag text input box
+    var tagInput = $('<input></input>');
+    tagInput.attr('type', 'text');
+    tagInput.attr('autocaptialize', 'none');
+    tagInput.attr('autocomplete', 'on');
+    tagInput.attr('spellcheck', 'off');
+    tagInput.attr('autocorrect', 'false');
+
+    //Confirm button when tag entry is complete
+    var addTagButton = $('<button></button>');
+    addTagButton.addClass('user-tag-add-btn');
+
+    addTagFormRoot.append(tagInput);
+    addTagFormRoot.append(addTagButton);
+
+    //Input tag button When clicked, opens up a textbox for tag entry
+    tagInputButton.on('click', () => {
+      tagInputButton.hide();
+      addTagFormRoot.show();
+      tagInput.val('');
+
+      tagInput.focus();
+    });
+
+    //When new tag is submitted
+    var tagEnteredCallback = () => {
+      var newTagText = tagInput.val();
+      console.log(newTagText);
+      //TODO!!!! sanitize(newTagText);
+      tagInput.val('');
+      tagInputButton.show();
+      addTagFormRoot.hide();
+
+      this.addTag(newTagText);
+
+      //Trigger event callbacks
+      this.triggerTagAddEvent(newTagText);
+    };
+
+    addTagButton.on('click', tagEnteredCallback);
+    tagInput.on('keypress',function(e) {
+      if(e.which == 13) {
+        tagEnteredCallback();
+      }
+    });
+
+    var ulButtonParent = $('<ul></ul>');
+    ulButtonParent.append(tagInputButton);
+    ulButtonParent.append(addTagFormRoot);
+
+    tagSection.append(tagSectionTitle);
+    tagSection.append(ulButtonParent);
+    
+    this.tagList = ulButtonParent;
+    rootElement.append(tagSection);
+
+    this.rootElement = rootElement;
+  }
+
+  loadTagsToUi(tagList){
+    this.tagList.find('.tag').remove();
+
+    tagList.forEach(tag => {
+      this.addTag(tag);
+    });
+  }
+
+  addTag(tagText){
     var newTag = $('<li></li>');
     //TODO Sanitize html
     newTag.addClass('tag');
@@ -204,32 +373,24 @@ class TaggerUi{
     newTag.text(tagText);
     newTag.on('click', () => {
       this.removeTag(tagText);
+
+      this.triggerTagRemoveEvent(tagText);
     });
 
     this.tagList.find('li.user-tag-add-btn').before(newTag);
   }
 
   removeTag(tagText){
-    var rawWkData = this.getCurrentWanikaniItemData();
-    var currentTags = Array.from(this.tagList.find('.tag').map((i, tagElem) => $(tagElem).attr('value')));
-    this.tagList.find(`.tag[value="${tagText}"]`).remove();
-
-    var remainingTags = currentTags.filter((tag) => tag != tagText);
-
-    var itemData = mapToTaggerItem(rawWkData, remainingTags);
-    this.tagManager.updateItemTags(itemData);
+    this.tagList.find(`.tag[value="${tagText}"]`).get(0).remove();
   }
 
-  saveTag(tagText){
-    var rawWkData = this.getCurrentWanikaniItemData();
-    var currentTags = Array.from(this.tagList.find('.tag').map((i, tagElem) => $(tagElem).attr('value')));
-    
-    var itemData = mapToTaggerItem(rawWkData, currentTags);
-    itemData.tags.push(tagText);
-    this.tagManager.updateItemTags(itemData);
+  getCurrentTags(){
+    var currentTags = this.tagList.find('.tag')
+      .map((i, tagElem) => $(tagElem).attr('value'));
+    return Array.from(currentTags);
   }
 
-  getCurrentWanikaniItemData(){
+  getCurrentWkItem(){
     // TODO Move this to a "data provider" kind of class
     // For fetching raw data off the current page
     var url = new URL(window.location.href);
@@ -313,7 +474,7 @@ function mapToTaggerItem(wkItem, currentTags){
  * Manages tag data, transforming it to something
  * that can be saved for later
  */
-class TagManager{
+class TagController{
   tagRepository;
   
   constructor(){
