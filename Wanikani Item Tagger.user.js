@@ -65,14 +65,14 @@ var cssString = `
 `;
 
 class TaggerUiManager{
-  tagManager;
+  tagController;
   tagInputField;
   tagList;
   tagUi;
   
-  constructor(tagManager){
+  constructor(tagController){
 
-    this.tagManager = tagManager;
+    this.tagController = tagController;
 
     //Generate UI based on page location
     var pageUrl = window.location.href;
@@ -83,19 +83,18 @@ class TaggerUiManager{
     GM_addStyle(this.tagUi.css);
 
     //Listen to tag add or remove events, save updated tags
-    this.tagUi.onTagAdd((tagText) => {
-      this.saveTag(tagText);
+    this.tagUi.onTagAdd((tagViewModel) => {
+      this.saveTag(tagViewModel);
     });
-    this.tagUi.onTagRemove((tagText) => {
-      this.removeTag(tagText);
+    this.tagUi.onTagRemove((tagViewModel) => {
+      this.removeTag(tagViewModel);
     });
 
     //Item changed event handler
     var itemChangedEvent = (key, callback) => {
-      var currentItem = this.getCurrentWkItem();
+      var currentItem = this.tagUi.getCurrentWkItem();
 
-      var storedTags = this.tagManager.getCurrentTags(currentItem.itemType, currentItem.itemName);
-      this.tagUi.removeAllTags(taggerItem);
+      var storedTags = this.tagController.getItemTags(currentItem.itemType, currentItem.itemName);
       this.tagUi.loadTagsToUi(storedTags);
     }
 
@@ -108,7 +107,7 @@ class TaggerUiManager{
     var pageUrlPathParts = url.pathname.split('/');
     var itemType = pageUrlPathParts[1];
     var itemName = decodeURIComponent(pageUrlPathParts[2]);
-    var tags = this.tagManager.getItemTags(itemType, itemName);
+    var tags = this.tagController.getItemTags(itemType, itemName);
     this.tagUi.loadTagsToUi(tags);
   }
 
@@ -117,7 +116,7 @@ class TaggerUiManager{
     var currentTags = this.tagUi.getCurrentTags();
 
     var itemData = mapToTaggerItem(rawWkData, currentTags);
-    this.tagManager.updateItemTags(itemData);
+    this.tagController.updateItemTags(itemData);
   }
 
   saveTag(tagText){
@@ -125,7 +124,7 @@ class TaggerUiManager{
     var currentTags = this.tagUi.getCurrentTags();
     
     var itemData = mapToTaggerItem(rawWkData, currentTags);
-    this.tagManager.updateItemTags(itemData);
+    this.tagController.updateItemTags(itemData);
   }
 }
 
@@ -142,35 +141,20 @@ class TaggerUiFactory{
     //Add UI (depending on page)
     if (pageUrl.indexOf('wanikani.com/review/session') >= 0){
       // Review
+      throw new Error('Not implemented');
     } else if (pageUrl.indexOf('wanikani.com/lesson/session') >= 0){
-      // Lesson 
-      var rootElement = $('#supplement-voc-meaning > div > div.pure-u-1-4.col1');
-
-      // Tag section Title
-      var tagSectionHeader = $('<h2></h2>');
-      tagSectionHeader.text('Tags');
-
-      // Tag section
-      var tagSectionContents = $('<div></div>');
-
-      var tagInputField = $('<input></input>');
-      tagInputField.attr('id', 'custom-tag-list');
-      tagInputField.addClass('noSwipe');
-      tagSectionContents.append(tagInputField);
-      this.tagInputField = tagInputField;
-
-      //Append UI elements
-      rootElement.append(tagSectionHeader);
-      rootElement.append(tagSectionContents);
+      // Lesson
+      return new ReviewTaggerUi();
     } else if (
       pageUrl.indexOf('wanikani.com/radicals') ||
       pageUrl.indexOf('wanikani.com/kanji') ||
       pageUrl.indexOf('wanikani.com/vocabulary')
     ){
-      // Wanikani item definition pages
+      //Wanikani item definition pages
       return new DefinitionTaggerUi();
     } else {
-      console.error('Cannot attach UI, invalid page');
+      //No match
+      throw new Error('Cannot attach UI, invalid page.');
     }
   }
 }
@@ -260,6 +244,172 @@ class BaseTaggerUi{
   }
 }
 
+class ReviewTaggerUi extends BaseTaggerUi{
+
+  rootElement;
+  css = ``;
+  tagListElem;
+
+  constructor(){
+    super();
+
+    //Add to Meaning section
+    var rootElement = $('#supplement-voc-meaning > div > div.pure-u-1-4.col1');
+
+    var tagSection = $('<div></div>');
+
+    var tagSectionTitle = $('<h2></h2>');
+    tagSectionTitle.text('Tags');
+    
+    var tagList = $('<div></div>');
+    tagList.attr('id', 'tag-list');
+
+    //Input tag button
+    var tagInputButton = $('<button></button>')
+    tagInputButton.addClass('user-tag-add-btn');
+    tagInputButton.attr('title', 'Add your own tags');
+    tagInputButton.attr('style', 'display: inline-block;');
+
+    var addTagFormRoot = $('<div></div>');
+    addTagFormRoot.attr('style', 'display: inline-block;');
+    addTagFormRoot.hide();
+
+    //Tag text input box
+    var tagInput = $('<input></input>');
+    tagInput.attr('type', 'text');
+    tagInput.attr('autocaptialize', 'none');
+    tagInput.attr('autocomplete', 'on');
+    tagInput.attr('spellcheck', 'off');
+    tagInput.attr('autocorrect', 'false');
+    tagInput.addClass('noSwipe');
+    tagInput.off();
+
+    //Confirm button when tag entry is complete
+    var addTagButton = $('<button></button>');
+    addTagButton.addClass('user-tag-add-btn');
+
+    addTagFormRoot.append(tagInput);
+    addTagFormRoot.append(addTagButton);
+
+    //Input tag button When clicked, opens up a textbox for tag entry
+    tagInputButton.on('click', () => {
+      tagInputButton.hide();
+      addTagFormRoot.show();
+      tagInput.val('');
+
+      tagInput.focus();
+    });
+
+    //When new tag is submitted
+    var tagEnteredCallback = () => {
+      var newTagText = tagInput.val();
+      //TODO!!!! sanitize(newTagText);
+      tagInput.val('');
+      addTagFormRoot.hide();
+      tagInputButton.show();
+
+      var newItemModel = new TaggerItemViewModel();
+      newItemModel.tagText = newTagText;
+
+      this.addTag(newItemModel);
+
+      //Trigger event callbacks
+      this.triggerTagAddEvent(newItemModel);
+    };
+
+    addTagButton.on('click', tagEnteredCallback);
+    tagInput.on('keypress',function(e) {
+      if(e.which == 13) {
+        tagEnteredCallback();
+      }
+    });
+
+    var ulButtonParent = $('<div></div>');
+    ulButtonParent.append(tagInputButton);
+    ulButtonParent.append(addTagFormRoot);
+
+    tagSection.append(tagSectionTitle);
+    tagSection.append(tagList);
+    tagSection.append(ulButtonParent);
+    
+    this.tagListElem = tagList;
+    rootElement.append(tagSection);
+
+    this.rootElement = rootElement;
+  }
+
+  loadTagsToUi(tagList){
+    this.tagListElem.find('.tag').remove();
+
+    tagList.forEach(tag => {
+      this.addTag(tag);
+    });
+  }
+
+  addTag(tagViewModel){
+    var newTag = $('<li></li>');
+    //TODO Sanitize html
+    newTag.addClass('tag');
+    newTag.attr('title', 'Click to remove tag');
+    newTag.attr('value', tagViewModel.tagText);
+    newTag.data('view-model', tagViewModel);
+    newTag.text(tagViewModel.tagText);
+    newTag.on('click', () => {
+      this.removeTag(tagViewModel);
+      this.triggerTagRemoveEvent(tagViewModel);
+    });
+
+    this.tagListElem.append(newTag);
+  }
+
+  removeTag(tagViewModel){
+    this.tagListElem.find(`.tag[value="${tagViewModel.tagText}"]`).get(0).remove();
+  }
+
+  getCurrentTags(){
+    var currentTags = this.tagListElem.find('.tag')
+      .map((i, tagElem) => $(tagElem).data('view-model'));
+    return Array.from(currentTags);
+  }
+
+  getCurrentWkItem(){
+    // TODO Move this to a "data provider" kind of class
+    // For fetching raw data off the current page
+    //Gather data from page
+    var pageUrl = window.location.href;
+    var currentItem;
+    if (pageUrl.indexOf('lesson') >= 0){
+      currentItem = $.jStorage.get('l/currentLesson');
+    }
+    else{
+      currentItem = $.jStorage.get('currentItem');
+    }
+
+    var wkItemData = new WanikaniItemModel();
+
+    //Determine item type
+    var itemType = '';
+    var itemName = '';
+    if (currentItem.hasOwnProperty('voc')){
+      itemType = ItemTypes.Vocabulary;
+      itemName = currentItem.voc;
+    } 
+    else if (currentItem.hasOwnProperty('kan')){
+      itemType = ItemTypes.Kanji;
+      itemName = currentItem.kan;
+    }
+    else if (currentItem.hasOwnProperty('rad')){
+      itemType = ItemTypes.Radical;
+      itemName = currentItem.rad;
+    }
+    
+    wkItemData.itemName = itemName;
+    wkItemData.itemType = itemType;
+
+    return wkItemData;
+  }
+}
+
 /**
  * UI for the definition pages on Wanikani
  * For radicals, kanji, and vocabulary pages
@@ -268,6 +418,7 @@ class DefinitionTaggerUi extends BaseTaggerUi{
 
   rootElement;
   css = ``;
+  tagListElem;
 
   constructor(){
     super();
@@ -318,11 +469,13 @@ class DefinitionTaggerUi extends BaseTaggerUi{
     //When new tag is submitted
     var tagEnteredCallback = () => {
       var newTagText = tagInput.val();
-      console.log(newTagText);
       //TODO!!!! sanitize(newTagText);
       tagInput.val('');
-      tagInputButton.show();
       addTagFormRoot.hide();
+      tagInputButton.show();
+
+      var newItemModel = new TaggerItemViewModel();
+      newItemModel.tagText = newTagText;
 
       this.addTag(newTagText);
 
@@ -344,43 +497,43 @@ class DefinitionTaggerUi extends BaseTaggerUi{
     tagSection.append(tagSectionTitle);
     tagSection.append(ulButtonParent);
     
-    this.tagList = ulButtonParent;
+    this.tagListElem = ulButtonParent;
     rootElement.append(tagSection);
 
     this.rootElement = rootElement;
   }
 
   loadTagsToUi(tagList){
-    this.tagList.find('.tag').remove();
+    this.tagListElem.find('.tag').remove();
 
     tagList.forEach(tag => {
       this.addTag(tag);
     });
   }
 
-  addTag(tagText){
+  addTag(tagViewModel){
     var newTag = $('<li></li>');
     //TODO Sanitize html
     newTag.addClass('tag');
     newTag.attr('title', 'Click to remove tag');
-    newTag.attr('value', tagText);
-    newTag.text(tagText);
+    newTag.attr('value', tagViewModel.tagText);
+    newTag.data('view-model', tagViewModel);
+    newTag.text(tagViewModel.tagText);
     newTag.on('click', () => {
-      this.removeTag(tagText);
-
-      this.triggerTagRemoveEvent(tagText);
+      this.removeTag(tagViewModel);
+      this.triggerTagRemoveEvent(tagViewModel);
     });
 
-    this.tagList.find('li.user-tag-add-btn').before(newTag);
+    this.tagListElem.find('li.user-tag-add-btn').before(newTag);
   }
 
-  removeTag(tagText){
-    this.tagList.find(`.tag[value="${tagText}"]`).get(0).remove();
+  removeTag(tagViewModel){
+    this.tagListElem.find(`.tag[value="${tagViewModel.tagText}"]`).get(0).remove();
   }
 
   getCurrentTags(){
-    var currentTags = this.tagList.find('.tag')
-      .map((i, tagElem) => $(tagElem).attr('value'));
+    var currentTags = this.tagListElem.find('.tag')
+      .map((i, tagElem) => $(tagElem).data('view-model'));
     return Array.from(currentTags);
   }
 
@@ -393,10 +546,7 @@ class DefinitionTaggerUi extends BaseTaggerUi{
     var itemTypeRaw = pageUrlPathParts[1].toLowerCase();
     var itemName = decodeURIComponent(pageUrlPathParts[2]);
 
-    var wkItemData = {
-      itemType: '',
-      itemName: ''
-    };
+    var wkItemData = new WanikaniItemModel();
 
     //Determine item type
     var itemType = '';
@@ -418,7 +568,7 @@ class DefinitionTaggerUi extends BaseTaggerUi{
 }
 
 //===================================================
-//Tagger Item DTO
+//Item types enum
 
 const ItemTypes = {
   Vocabulary: 'Vocabulary',
@@ -426,20 +576,48 @@ const ItemTypes = {
   Radical: 'Radical'
 };
 
+
+//===================================================
+//WaniKani data object
+
+/**
+ * An object model of the Wanikani item
+ * Contains only data that can be extracted from WaniKani
+ */
+class WanikaniItemModel{
+  itemName = '';
+  itemType = '';
+}
+
+
+//===================================================
+//Tagger Item View Model
+
+/**
+ * Represents data for 1 tag
+ * Contains information on how to display the tag on the UI
+ */
+class TaggerItemViewModel{
+  tagText = '';
+  tagColor = '#AA00FF';
+}
+
+//===================================================
+//Tagger Item DTO
+
 /**
  * Represents a data transfer object (DTO). It contains 
  * the relevant WaniKani item data required
- * for the tagger to work.
+ * for the tagger's main functions
  */
 class TaggerItemDTO{
 
   //Wanikani app official fields
   itemType = '';
-  displayName = '';
-  level = -1;
+  itemName = '';
 
   //Item Tagger fields
-  tags = [];
+  tags = [];    //a list of type TaggerItemViewModel
 
   constructor(){
   }
@@ -448,38 +626,18 @@ class TaggerItemDTO{
 /**
  * Factory function that converts a wanikani item data object from local storage
  * and maps it to the DTO object WanikaniItem.
- * @param {} wkItem A wanikani item data object from local storage
+ * @param {WanikaniItemModel} wkItemModel A wanikani item data object representing the wanikani item on the page
  * @param {Array} currentTags (optional) An array/list of current user defined tags associated with the item, otherwise it is an empty list
  */
-function mapToTaggerItem(wkItem, currentTags){
+function mapToTaggerItem(wkItemModel, currentTags){
   var taggerItem = new TaggerItemDTO();
 
-  //Current tags is default
+  //Current tags is null, default to empty list
   if (currentTags == null){ currentTags = []; }
 
-  //Determine type and the name
-  var itemType;
-  var itemDisplayName;
-  if (wkItem.hasOwnProperty('voc')){
-    itemType = ItemTypes.Vocabulary;
-    itemDisplayName = wkItem.voc;
-  }
-  else if (wkItem.hasOwnProperty('kan')){
-    itemType = ItemTypes.Kanji;
-    itemDisplayName = wkItem.kan;
-  }
-  else if (wkItem.hasOwnProperty('rad')){
-    itemType = ItemTypes.Radical;
-    itemDisplayName = wkItem.rad;
-  }
-  else{
-    itemType = wkItem.itemType;
-    itemDisplayName = wkItem.itemName;
-  }
-
-  taggerItem.displayName = itemDisplayName;
-  taggerItem.type = itemType;
-  taggerItem.level = wkItem.level;
+  //Map fields
+  taggerItem.itemName = wkItemModel.itemName;
+  taggerItem.itemType = wkItemModel.itemType;
   taggerItem.tags = currentTags;
   
   return taggerItem;
@@ -500,6 +658,7 @@ class TagController{
   }
 
   updateItemTags(tagItemDto){
+    console.debug(tagItemDto);
     this.tagRepository.saveTag(tagItemDto);
   }
 
@@ -539,7 +698,7 @@ class TagRepository{
   }
 
   generateStoreKeyFromDto(tagItemDto){
-    return this.generateStoreKey(tagItemDto.type, tagItemDto.displayName);
+    return this.generateStoreKey(tagItemDto.itemType, tagItemDto.itemName);
   }
 }
 
@@ -556,7 +715,7 @@ class TamperMonkeyUserDataContext{
 
   writeData(key, value){
     if (key == null || key == ''){
-      throw new Error('Cannot save with null key.');
+      throw new Error(`Cannot save with null key. alue=${value}`);
     }
     GM_setValue(key, value);
   }
