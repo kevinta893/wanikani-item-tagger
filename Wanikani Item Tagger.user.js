@@ -18,15 +18,10 @@
 // ==/UserScript==
 
 
-
-
-var taggerUi;
-var tagManager;
-
 //Loads user script
 function initialize(){
-  tagManager = new TagController();
-  taggerUi = new TaggerUiManager(tagManager);
+  var tagManager = new TagController();
+  var taggerUi = new TaggerUiManager(tagManager);
 }
 
 
@@ -97,12 +92,11 @@ class TaggerUiManager{
 
     //Item changed event handler
     var itemChangedEvent = (key, callback) => {
-      var currentItem = $.jStorage.get(key);
-      var taggerItem = mapTaggerItem(currentItem);
+      var currentItem = this.getCurrentWkItem();
 
-      var currentTags = this.tagManager.getCurrentTags(ItemTypes.Vocabulary, "");
+      var storedTags = this.tagManager.getCurrentTags(currentItem.itemType, currentItem.itemName);
       this.tagUi.removeAllTags(taggerItem);
-      this.tagUi.loadTagsToUi(tags);
+      this.tagUi.loadTagsToUi(storedTags);
     }
 
     //Every time item changes, update the tag list
@@ -393,13 +387,33 @@ class DefinitionTaggerUi extends BaseTaggerUi{
   getCurrentWkItem(){
     // TODO Move this to a "data provider" kind of class
     // For fetching raw data off the current page
+    //Gather data from page
     var url = new URL(window.location.href);
     var pageUrlPathParts = url.pathname.split('/');
-    var itemType = pageUrlPathParts[1];
+    var itemTypeRaw = pageUrlPathParts[1].toLowerCase();
     var itemName = decodeURIComponent(pageUrlPathParts[2]);
-    var fakeWkData = {};
-    fakeWkData.voc = itemName;
-    return fakeWkData;
+
+    var wkItemData = {
+      itemType: '',
+      itemName: ''
+    };
+
+    //Determine item type
+    var itemType = '';
+    if (itemTypeRaw.toLowerCase() == ItemTypes.Vocabulary.toLowerCase()){
+      itemType = ItemTypes.Vocabulary;
+    } 
+    else if (itemTypeRaw.toLowerCase() == ItemTypes.Kanji.toLowerCase()){
+      itemType = ItemTypes.Kanji;
+    }
+    else if (itemTypeRaw.toLowerCase() == ItemTypes.Radical.toLowerCase()){
+      itemType = ItemTypes.Radical;
+    }
+    
+    wkItemData.itemName = itemName;
+    wkItemData.itemType = itemType;
+
+    return wkItemData;
   }
 }
 
@@ -457,6 +471,10 @@ function mapToTaggerItem(wkItem, currentTags){
   else if (wkItem.hasOwnProperty('rad')){
     itemType = ItemTypes.Radical;
     itemDisplayName = wkItem.rad;
+  }
+  else{
+    itemType = wkItem.itemType;
+    itemDisplayName = wkItem.itemName;
   }
 
   taggerItem.displayName = itemDisplayName;
@@ -537,6 +555,9 @@ class TamperMonkeyUserDataContext{
   }
 
   writeData(key, value){
+    if (key == null || key == ''){
+      throw new Error('Cannot save with null key.');
+    }
     GM_setValue(key, value);
   }
 
