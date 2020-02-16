@@ -36,6 +36,7 @@ var cssString = `
     padding-left: 0.5em;
     padding-right: 0.5em;
     margin-right: 0.5em;
+    margin-bottom: 0.5em;
     background-color: #AA00FF;
     color: #eee;
     -webkit-border-radius: 3px;
@@ -630,6 +631,7 @@ class DefinitionTaggerUi extends BaseTaggerUi{
     tagInput.attr('autocomplete', 'on');
     tagInput.attr('spellcheck', 'off');
     tagInput.attr('autocorrect', 'false');
+    tagInput.attr('maxlength', '100');
 
     //Confirm button when tag entry is complete
     var addTagButton = $('<button></button>');
@@ -650,7 +652,6 @@ class DefinitionTaggerUi extends BaseTaggerUi{
     //When new tag is submitted
     var tagEnteredCallback = () => {
       var newTagText = tagInput.val();
-      //TODO!!!! sanitize(newTagText);
       tagInput.val('');
       addTagFormRoot.hide();
       tagInputButton.show();
@@ -658,7 +659,7 @@ class DefinitionTaggerUi extends BaseTaggerUi{
       var newItemModel = new TaggerItemViewModel();
       newItemModel.tagText = newTagText;
 
-      this.addTag(newTagText);
+      this.addTag(newItemModel);
 
       //Trigger event callbacks
       this.triggerTagAddEvent(newTagText);
