@@ -22,6 +22,7 @@
 function initialize(){
   var tagManager = new TagController();
   var taggerUi = new TaggerUiManager(tagManager);
+  console.log('Wanikani Item Tagger started.')
 }
 
 
@@ -75,8 +76,7 @@ class TaggerUiManager{
     this.tagController = tagController;
 
     //Generate UI based on page location
-    var pageUrl = window.location.href;
-    this.tagUi = new TaggerUiFactory().createTaggerUi(pageUrl);
+    this.tagUi = TaggerUiFactory.createTaggerUi();
 
     //Add CSS
     GM_addStyle(cssString);
@@ -133,28 +133,27 @@ class TaggerUiManager{
  * that the script is current on
  */
 class TaggerUiFactory{
-  constructor(){
-
-  }
-
-  createTaggerUi(pageUrl){
+  static createTaggerUi(){
     //Add UI (depending on page)
+    var pageUrl = window.location.href;
     if (pageUrl.indexOf('wanikani.com/review/session') >= 0){
       // Review
-      throw new Error('Not implemented');
+      throw new Error('Review page not yet supported');
+      return new ReviewTaggerUi();
     } else if (pageUrl.indexOf('wanikani.com/lesson/session') >= 0){
       // Lesson
-      return new ReviewTaggerUi();
+      throw new Error('Lesson page not yet supported');
+      return new LessonTaggerUi();
     } else if (
-      pageUrl.indexOf('wanikani.com/radicals') ||
-      pageUrl.indexOf('wanikani.com/kanji') ||
-      pageUrl.indexOf('wanikani.com/vocabulary')
+      pageUrl.indexOf('wanikani.com/radicals') >= 0 ||
+      pageUrl.indexOf('wanikani.com/kanji') >= 0 ||
+      pageUrl.indexOf('wanikani.com/vocabulary') >= 0
     ){
       //Wanikani item definition pages
       return new DefinitionTaggerUi();
     } else {
       //No match
-      throw new Error('Cannot attach UI, invalid page.');
+      throw new Error('Cannot create UI, invalid page.');
     }
   }
 }
@@ -244,7 +243,14 @@ class BaseTaggerUi{
   }
 }
 
-class ReviewTaggerUi extends BaseTaggerUi{
+/**
+ * Tagger UI for the lesson pages
+ * These pages are unique in that the lesson and
+ * the quiz are both in the same page.
+ * The lesson itself also contains 3 different versions
+ * of the information cards, which all need the tagger UI
+ */
+class LessonTaggerUi extends BaseTaggerUi{
 
   rootElement;
   css = ``;
@@ -253,8 +259,19 @@ class ReviewTaggerUi extends BaseTaggerUi{
   constructor(){
     super();
 
-    //Add to Meaning section
-    var rootElement = $('#supplement-voc-meaning > div > div.pure-u-1-4.col1');
+    //Add UI to meaning section of a Lesson (before quiz)
+    var lessonVocabInformationSelector = '#supplement-voc-meaning > div > div.pure-u-1-4.col1';
+    var lessonKanjiInformationSelector = '#supplement-kan-meaning > div > div.pure-u-1-4.col1';
+    var lessonRadicalInformationSelector = '#supplement-rad-name > div > div';
+    var quizInformationSelector = '#item-info-col1'
+    var allSelectors = [
+      lessonVocabInformationSelector,
+      lessonKanjiInformationSelector,
+      lessonRadicalInformationSelector,
+      quizInformationSelector
+    ];
+
+    var rootElement = $(allSelectors.join(','));
 
     var tagSection = $('<div></div>');
 
@@ -379,11 +396,175 @@ class ReviewTaggerUi extends BaseTaggerUi{
     var pageUrl = window.location.href;
     var currentItem;
     if (pageUrl.indexOf('lesson') >= 0){
+      //In lesson section
       currentItem = $.jStorage.get('l/currentLesson');
     }
     else{
-      currentItem = $.jStorage.get('currentItem');
+      //In quiz section 
+      currentItem = $.jStorage.get('l/currentQuizItem');
     }
+
+    var wkItemData = new WanikaniItemModel();
+
+    //Determine item type
+    var itemType = '';
+    var itemName = '';
+    if (currentItem.hasOwnProperty('voc')){
+      itemType = ItemTypes.Vocabulary;
+      itemName = currentItem.voc;
+    } 
+    else if (currentItem.hasOwnProperty('kan')){
+      itemType = ItemTypes.Kanji;
+      itemName = currentItem.kan;
+    }
+    else if (currentItem.hasOwnProperty('rad')){
+      itemType = ItemTypes.Radical;
+      itemName = currentItem.rad;
+    }
+    
+    wkItemData.itemName = itemName;
+    wkItemData.itemType = itemType;
+
+    return wkItemData;
+  }
+}
+
+/**
+ * Tagger UI for the review page
+ */
+class ReviewTaggerUi extends BaseTaggerUi{
+
+  rootElement;
+  css = ``;
+  tagListElem;
+
+  constructor(){
+    super();
+
+    //Add UI to meaning section of a Lesson (before quiz)
+    var rootElement = $('#item-info-col1');
+
+    var tagSection = $('<div></div>');
+
+    var tagSectionTitle = $('<h2></h2>');
+    tagSectionTitle.text('Tags');
+    
+    var tagList = $('<div></div>');
+    tagList.attr('id', 'tag-list');
+
+    //Input tag button
+    var tagInputButton = $('<button></button>')
+    tagInputButton.addClass('user-tag-add-btn');
+    tagInputButton.attr('title', 'Add your own tags');
+    tagInputButton.attr('style', 'display: inline-block;');
+
+    var addTagFormRoot = $('<div></div>');
+    addTagFormRoot.attr('style', 'display: inline-block;');
+    addTagFormRoot.hide();
+
+    //Tag text input box
+    var tagInput = $('<input></input>');
+    tagInput.attr('type', 'text');
+    tagInput.attr('autocaptialize', 'none');
+    tagInput.attr('autocomplete', 'on');
+    tagInput.attr('spellcheck', 'off');
+    tagInput.attr('autocorrect', 'false');
+    tagInput.addClass('noSwipe');
+    tagInput.off();
+
+    //Confirm button when tag entry is complete
+    var addTagButton = $('<button></button>');
+    addTagButton.addClass('user-tag-add-btn');
+
+    addTagFormRoot.append(tagInput);
+    addTagFormRoot.append(addTagButton);
+
+    //Input tag button When clicked, opens up a textbox for tag entry
+    tagInputButton.on('click', () => {
+      tagInputButton.hide();
+      addTagFormRoot.show();
+      tagInput.val('');
+
+      tagInput.focus();
+    });
+
+    //When new tag is submitted
+    var tagEnteredCallback = () => {
+      var newTagText = tagInput.val();
+      //TODO!!!! sanitize(newTagText);
+      tagInput.val('');
+      addTagFormRoot.hide();
+      tagInputButton.show();
+
+      var newItemModel = new TaggerItemViewModel();
+      newItemModel.tagText = newTagText;
+
+      this.addTag(newItemModel);
+
+      //Trigger event callbacks
+      this.triggerTagAddEvent(newItemModel);
+    };
+
+    addTagButton.on('click', tagEnteredCallback);
+    tagInput.on('keypress',function(e) {
+      if(e.which == 13) {
+        tagEnteredCallback();
+      }
+    });
+
+    var ulButtonParent = $('<div></div>');
+    ulButtonParent.append(tagInputButton);
+    ulButtonParent.append(addTagFormRoot);
+
+    tagSection.append(tagSectionTitle);
+    tagSection.append(tagList);
+    tagSection.append(ulButtonParent);
+    
+    this.tagListElem = tagList;
+    rootElement.append(tagSection);
+
+    this.rootElement = rootElement;
+  }
+
+  loadTagsToUi(tagList){
+    this.tagListElem.find('.tag').remove();
+
+    tagList.forEach(tag => {
+      this.addTag(tag);
+    });
+  }
+
+  addTag(tagViewModel){
+    var newTag = $('<li></li>');
+    //TODO Sanitize html
+    newTag.addClass('tag');
+    newTag.attr('title', 'Click to remove tag');
+    newTag.attr('value', tagViewModel.tagText);
+    newTag.data('view-model', tagViewModel);
+    newTag.text(tagViewModel.tagText);
+    newTag.on('click', () => {
+      this.removeTag(tagViewModel);
+      this.triggerTagRemoveEvent(tagViewModel);
+    });
+
+    this.tagListElem.append(newTag);
+  }
+
+  removeTag(tagViewModel){
+    this.tagListElem.find(`.tag[value="${tagViewModel.tagText}"]`).get(0).remove();
+  }
+
+  getCurrentTags(){
+    var currentTags = this.tagListElem.find('.tag')
+      .map((i, tagElem) => $(tagElem).data('view-model'));
+    return Array.from(currentTags);
+  }
+
+  getCurrentWkItem(){
+    // TODO Move this to a "data provider" kind of class
+    // For fetching raw data off the current page
+    //Gather data from page
+    var currentItem = $.jStorage.get("currentItem");
 
     var wkItemData = new WanikaniItemModel();
 
@@ -558,6 +739,9 @@ class DefinitionTaggerUi extends BaseTaggerUi{
     }
     else if (itemTypeRaw.toLowerCase() == ItemTypes.Radical.toLowerCase()){
       itemType = ItemTypes.Radical;
+    }
+    else{
+      throw new Error(`Unknown item type=${itemTypeRaw}`);
     }
     
     wkItemData.itemName = itemName;
