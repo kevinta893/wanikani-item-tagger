@@ -2,7 +2,7 @@
 // @name        Wanikani Item Tagger
 // @namespace   kevinta893
 // @author      kevinta893
-// @description Show whether the vocabulary word is common or not according to Jisho.org
+// @description Allows you to tag review items
 // @run-at      document-end
 // @include     https://www.wanikani.com/review/session
 // @include     https://www.wanikani.com/lesson/session
@@ -106,7 +106,7 @@ class TaggerUiManager{
     // Load tag data to page
     var url = new URL(window.location.href);
     var pageUrlPathParts = url.pathname.split('/');
-    var itemType = pageUrlPathParts[1];
+    var itemType = mapUrlItemTypeToItemType(pageUrlPathParts[1]);
     var itemName = decodeURIComponent(pageUrlPathParts[2]);
     var tags = this.tagController.getItemTags(itemType, itemName);
     this.tagUi.loadTagsToUi(tags);
@@ -730,20 +730,7 @@ class DefinitionTaggerUi extends BaseTaggerUi{
 
     var wkItemData = new WanikaniItemModel();
 
-    //Determine item type
-    var itemType = '';
-    if (itemTypeRaw.toLowerCase() == ItemTypes.Vocabulary.toLowerCase()){
-      itemType = ItemTypes.Vocabulary;
-    } 
-    else if (itemTypeRaw.toLowerCase() == ItemTypes.Kanji.toLowerCase()){
-      itemType = ItemTypes.Kanji;
-    }
-    else if (itemTypeRaw.toLowerCase() == ItemTypes.Radical.toLowerCase()){
-      itemType = ItemTypes.Radical;
-    }
-    else{
-      throw new Error(`Unknown item type=${itemTypeRaw}`);
-    }
+    var itemType = mapUrlItemTypeToItemType(itemTypeRaw);
     
     wkItemData.itemName = itemName;
     wkItemData.itemType = itemType;
@@ -761,6 +748,25 @@ const ItemTypes = {
   Radical: 'Radical'
 };
 
+
+/**
+ * Converts definition page url item type to the ItemTypes enum
+ * @param {string} urlItemType The item type based on the definition page URL
+ */
+function mapUrlItemTypeToItemType(urlItemType){
+  //TODO Refactor this into the definitions UI class since it is only used there.
+  if (urlItemType.toLowerCase() == 'vocabulary'){
+    return ItemTypes.Vocabulary;
+  } 
+  else if (urlItemType.toLowerCase() == 'kanji'){
+    return ItemTypes.Kanji;
+  }
+  else if (urlItemType.toLowerCase() == 'radicals'){
+    return ItemTypes.Radical;
+  }
+
+  throw new Error(`Unknown item type=${urlItemType}`);
+}
 
 //===================================================
 //WaniKani data object
