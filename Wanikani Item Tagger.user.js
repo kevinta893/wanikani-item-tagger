@@ -20,8 +20,8 @@
 
 //Loads user script
 function initialize(){
-  var tagManager = new TagController();
-  var taggerUi = new TaggerUiManager(tagManager);
+  var tagView = TaggerUiFactory.createTaggerUi();
+  var tagController = new TagController(tagView);
   console.log('Wanikani Item Tagger started.')
 }
 
@@ -66,37 +66,34 @@ var cssString = `
   }
 `;
 
-class TaggerUiManager{
-  tagController;
+class TagController{
+  tagService;
   tagInputField;
   tagList;
-  tagUi;
+  tagView;
   
-  constructor(tagController){
+  constructor(tagView){
 
-    this.tagController = tagController;
-
-    //Generate UI based on page location
-    this.tagUi = TaggerUiFactory.createTaggerUi();
-
+    this.tagService = new TagService();
+    this.tagView = tagView;
     //Add CSS
     GM_addStyle(cssString);
-    GM_addStyle(this.tagUi.css);
+    GM_addStyle(this.tagView.css);
 
     //Listen to tag add or remove events, save updated tags
-    this.tagUi.onTagAdd((tagViewModel) => {
+    this.tagView.onTagAdd((tagViewModel) => {
       this.saveTag(tagViewModel);
     });
-    this.tagUi.onTagRemove((tagViewModel) => {
+    this.tagView.onTagRemove((tagViewModel) => {
       this.removeTag(tagViewModel);
     });
 
     //Item changed event handler
     var itemChangedEvent = (key, callback) => {
-      var currentItem = this.tagUi.getCurrentWkItem();
+      var currentItem = this.tagView.getCurrentWkItem();
 
-      var storedTags = this.tagController.getItemTags(currentItem.itemType, currentItem.itemName);
-      this.tagUi.loadTagsToUi(storedTags);
+      var storedTags = this.tagService.getItemTags(currentItem.itemType, currentItem.itemName);
+      this.tagView.loadTagsToUi(storedTags);
     }
 
     //Every time item changes, update the tag list
@@ -108,24 +105,24 @@ class TaggerUiManager{
     var pageUrlPathParts = url.pathname.split('/');
     var itemType = mapUrlItemTypeToItemType(pageUrlPathParts[1]);
     var itemName = decodeURIComponent(pageUrlPathParts[2]);
-    var tags = this.tagController.getItemTags(itemType, itemName);
-    this.tagUi.loadTagsToUi(tags);
+    var tags = this.tagService.getItemTags(itemType, itemName);
+    this.tagView.loadTagsToUi(tags);
   }
 
   removeTag(tagText){
-    var rawWkData = this.tagUi.getCurrentWkItem();
-    var currentTags = this.tagUi.getCurrentTags();
+    var rawWkData = this.tagView.getCurrentWkItem();
+    var currentTags = this.tagView.getCurrentTags();
 
     var itemData = mapToTaggerItem(rawWkData, currentTags);
-    this.tagController.updateItemTags(itemData);
+    this.tagService.updateItemTags(itemData);
   }
 
   saveTag(tagText){
-    var rawWkData = this.tagUi.getCurrentWkItem();
-    var currentTags = this.tagUi.getCurrentTags();
+    var rawWkData = this.tagView.getCurrentWkItem();
+    var currentTags = this.tagView.getCurrentTags();
     
     var itemData = mapToTaggerItem(rawWkData, currentTags);
-    this.tagController.updateItemTags(itemData);
+    this.tagService.updateItemTags(itemData);
   }
 }
 
@@ -140,18 +137,18 @@ class TaggerUiFactory{
     if (pageUrl.indexOf('wanikani.com/review/session') >= 0){
       // Review
       throw new Error('Review page not yet supported');
-      return new ReviewTaggerUi();
+      return new ReviewTaggerView();
     } else if (pageUrl.indexOf('wanikani.com/lesson/session') >= 0){
       // Lesson
       throw new Error('Lesson page not yet supported');
-      return new LessonTaggerUi();
+      return new LessonTaggerView();
     } else if (
       pageUrl.indexOf('wanikani.com/radicals') >= 0 ||
       pageUrl.indexOf('wanikani.com/kanji') >= 0 ||
       pageUrl.indexOf('wanikani.com/vocabulary') >= 0
     ){
       //Wanikani item definition pages
-      return new DefinitionTaggerUi();
+      return new DefinitionTaggerView();
     } else {
       //No match
       throw new Error('Cannot create UI, invalid page.');
@@ -167,7 +164,7 @@ class TaggerUiFactory{
  * When constructed, the subclasses of this UI should
  * self attach itself to the page.
  */
-class BaseTaggerUi{
+class BaseTaggerView{
 
   /**
    * Additional CSS to add
@@ -251,7 +248,7 @@ class BaseTaggerUi{
  * The lesson itself also contains 3 different versions
  * of the information cards, which all need the tagger UI
  */
-class LessonTaggerUi extends BaseTaggerUi{
+class LessonTaggerView extends BaseTaggerView{
 
   rootElement;
   css = ``;
@@ -433,7 +430,7 @@ class LessonTaggerUi extends BaseTaggerUi{
 /**
  * Tagger UI for the review page
  */
-class ReviewTaggerUi extends BaseTaggerUi{
+class ReviewTaggerView extends BaseTaggerView{
 
   rootElement;
   css = ``;
@@ -596,7 +593,7 @@ class ReviewTaggerUi extends BaseTaggerUi{
  * UI for the definition pages on Wanikani
  * For radicals, kanji, and vocabulary pages
  */
-class DefinitionTaggerUi extends BaseTaggerUi{
+class DefinitionTaggerView extends BaseTaggerView{
 
   rootElement;
   css = ``;
@@ -841,7 +838,7 @@ function mapToTaggerItem(wkItemModel, currentTags){
  * Manages tag data, transforming it to something
  * that can be saved for later
  */
-class TagController{
+class TagService{
   tagRepository;
   
   constructor(){
