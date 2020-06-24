@@ -27,44 +27,8 @@ function initialize(){
 
 
 //===================================================
-//Userscript UI
-
-var cssString = `
-  .tag{
-    cursor: pointer;
-    display: inline-block;
-    padding-left: 0.5em;
-    padding-right: 0.5em;
-    margin-right: 0.5em;
-    margin-bottom: 0.5em;
-    background-color: #AA00FF;
-    color: #eee;
-    -webkit-border-radius: 3px;
-    -moz-border-radius: 3px;
-    border-radius: 3px;
-  }
-  .tag:hover{
-
-  }
-  .user-tag-add-btn {
-    cursor: pointer;
-    margin-left: 0.3em;
-  }
-  .user-tag-add-btn:before {
-    content: '+ ADD TAG';
-    margin-right: 0.5em;
-    padding: 0.15em 0.3em;
-    background-color: #999;
-    color: #eee;
-    -webkit-transition: background-color 0.3s linear;
-    -moz-transition: background-color 0.3s linear;
-    -o-transition: background-color 0.3s linear;
-    transition: background-color 0.3s linear;
-    -webkit-border-radius: 3px;
-    -moz-border-radius: 3px;
-    border-radius: 3px;
-  }
-`;
+//Controller
+//Handles business logic
 
 class TagController{
   tagService;
@@ -76,9 +40,6 @@ class TagController{
 
     this.tagService = new TagService();
     this.tagView = tagView;
-    //Add CSS
-    GM_addStyle(cssString);
-    GM_addStyle(this.tagView.css);
 
     //Listen to tag add or remove events, save updated tags
     this.tagView.onTagAdd((tagViewModel) => {
@@ -96,9 +57,7 @@ class TagController{
       this.tagView.loadTagsToUi(storedTags);
     }
 
-    //Every time item changes, update the tag list
-    $.jStorage.listenKeyChange('currentItem', itemChangedEvent);
-    $.jStorage.listenKeyChange('l/currentLesson', itemChangedEvent);
+    this.tagView.onItemChanged(itemChangedEvent);
 
     // Load tag data to page
     var url = new URL(window.location.href);
@@ -166,12 +125,9 @@ class TaggerUiFactory{
  */
 class BaseTaggerView{
 
-  /**
-   * Additional CSS to add
-   */
-  css = ``;
   listenersTagAdded = [];
   listenersTagRemoved = [];
+  listenersItemChanged = [];
 
   constructor(){
 
@@ -207,8 +163,15 @@ class BaseTaggerView{
     });
   }
 
+  triggerItemChangedEvent(tagText){
+    //Private
+    this.listenersItemChanged.forEach(func => {
+      func(tagText);
+    });
+  }
+
   /**
-   * Adds a callback for when the UI recieves
+   * Adds a listener for when the UI recieves
    * a new tag entered by the user
    * @param {function} callback 
    */
@@ -217,12 +180,22 @@ class BaseTaggerView{
   }
 
   /**
-   * Adds a callback for when the UI recieves
+   * Adds a listener for when the UI recieves
    * a new tag is removed by the user
    * @param {function} callback 
    */
   onTagRemove(callback){
     this.listenersTagRemoved.push(callback);
+  }
+
+  /**
+   * Adds a listener for when the UI recieves
+   * a review item changed event
+   * Executes once when the script is started
+   * @param {function} callback 
+   */
+  onItemChanged(callback){
+    this.listenersItemChanged.push(callback);
   }
 
   /**
@@ -351,6 +324,10 @@ class LessonTaggerView extends BaseTaggerView{
     rootElement.append(tagSection);
 
     this.rootElement = rootElement;
+
+    //Every time item changes, update the tag list
+    $.jStorage.listenKeyChange('currentItem', itemChangedEvent);
+    $.jStorage.listenKeyChange('l/currentLesson', itemChangedEvent);
   }
 
   loadTagsToUi(tagList){
@@ -595,12 +572,50 @@ class ReviewTaggerView extends BaseTaggerView{
  */
 class DefinitionTaggerView extends BaseTaggerView{
 
+  cssString = `
+    .tag{
+      cursor: pointer;
+      display: inline-block;
+      padding-left: 0.5em;
+      padding-right: 0.5em;
+      margin-right: 0.5em;
+      margin-bottom: 0.5em;
+      background-color: #AA00FF;
+      color: #eee;
+      -webkit-border-radius: 3px;
+      -moz-border-radius: 3px;
+      border-radius: 3px;
+    }
+    .tag:hover{
+
+    }
+    .user-tag-add-btn {
+      cursor: pointer;
+      margin-left: 0.3em;
+    }
+    .user-tag-add-btn:before {
+      content: '+ ADD TAG';
+      margin-right: 0.5em;
+      padding: 0.15em 0.3em;
+      background-color: #999;
+      color: #eee;
+      -webkit-transition: background-color 0.3s linear;
+      -moz-transition: background-color 0.3s linear;
+      -o-transition: background-color 0.3s linear;
+      transition: background-color 0.3s linear;
+      -webkit-border-radius: 3px;
+      -moz-border-radius: 3px;
+      border-radius: 3px;
+    }
+  `;
   rootElement;
-  css = ``;
   tagListElem;
 
   constructor(){
     super();
+
+    //Add CSS
+    GM_addStyle(this.cssString);
 
     //Configure the UI for the definition page
     var rootElement = $('#information');
