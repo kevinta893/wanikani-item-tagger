@@ -43,7 +43,7 @@ class TagController{
 
     //Listen to tag add or remove events, save updated tags
     this.tagView.onTagAdd((tagViewModel) => {
-      this.saveTag(tagViewModel);
+      this.saveTags(tagViewModel);
     });
     this.tagView.onTagRemove((tagViewModel) => {
       this.removeTag(tagViewModel);
@@ -60,28 +60,29 @@ class TagController{
     this.tagView.onItemChanged(itemChangedEvent);
 
     // Load tag data to page
-    var url = new URL(window.location.href);
-    var pageUrlPathParts = url.pathname.split('/');
-    var itemType = mapUrlItemTypeToItemType(pageUrlPathParts[1]);
-    var itemName = decodeURIComponent(pageUrlPathParts[2]);
-    var tags = this.tagService.getItemTags(itemType, itemName);
-    this.tagView.loadTagsToUi(tags);
+    this.loadTags();
   }
 
   removeTag(tagText){
     var rawWkData = this.tagView.getCurrentWkItem();
-    var currentTags = this.tagView.getCurrentTags();
+    var currentTags = this.tagView.getCurrentTags();    // Will contain updated list with tag removed
 
     var itemData = mapToTaggerItem(rawWkData, currentTags);
     this.tagService.updateItemTags(itemData);
   }
 
-  saveTag(tagText){
+  saveTags(tagText){
     var rawWkData = this.tagView.getCurrentWkItem();
-    var currentTags = this.tagView.getCurrentTags();
+    var currentTags = this.tagView.getCurrentTags();    // Will contain updated list with tag removed
     
     var itemData = mapToTaggerItem(rawWkData, currentTags);
     this.tagService.updateItemTags(itemData);
+  }
+
+  loadTags(){
+    var currentItem = this.tagView.getCurrentWkItem();
+    var tags = this.tagService.getItemTags(currentItem.itemType, currentItem.itemName);
+    this.tagView.loadTagsToUi(tags);
   }
 }
 
@@ -737,12 +738,10 @@ class DefinitionTaggerView extends BaseTaggerView{
     //Gather data from page
     var url = new URL(window.location.href);
     var pageUrlPathParts = url.pathname.split('/');
-    var itemTypeRaw = pageUrlPathParts[1].toLowerCase();
+    var itemType = mapUrlItemTypeToItemType(pageUrlPathParts[1]);
     var itemName = decodeURIComponent(pageUrlPathParts[2]);
 
     var wkItemData = new WanikaniItemModel();
-
-    var itemType = mapUrlItemTypeToItemType(itemTypeRaw);
     
     wkItemData.itemName = itemName;
     wkItemData.itemType = itemType;
