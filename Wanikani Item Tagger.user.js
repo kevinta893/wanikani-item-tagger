@@ -63,6 +63,12 @@ class TagController{
     this.loadTags();
   }
 
+  loadTags(){
+    var currentItem = this.tagView.getCurrentWkItem();
+    var tags = this.tagService.getItemTags(currentItem.itemType, currentItem.itemName);
+    this.tagView.loadTagsToUi(tags);
+  }
+
   removeTag(tagText){
     var rawWkData = this.tagView.getCurrentWkItem();
     var currentTags = this.tagView.getCurrentTags();    // Will contain updated list with tag removed
@@ -77,12 +83,6 @@ class TagController{
     
     var itemData = mapToTaggerItem(rawWkData, currentTags);
     this.tagService.updateItemTags(itemData);
-  }
-
-  loadTags(){
-    var currentItem = this.tagView.getCurrentWkItem();
-    var tags = this.tagService.getItemTags(currentItem.itemType, currentItem.itemName);
-    this.tagView.loadTagsToUi(tags);
   }
 }
 
@@ -733,9 +733,8 @@ class DefinitionTaggerView extends BaseTaggerView{
   }
 
   getCurrentWkItem(){
-    // TODO Move this to a "data provider" kind of class
-    // For fetching raw data off the current page
-    //Gather data from page
+    // Fetches item data off the current page
+    // Gathers data from page
     var url = new URL(window.location.href);
     var pageUrlPathParts = url.pathname.split('/');
     var itemType = mapUrlItemTypeToItemType(pageUrlPathParts[1]);
