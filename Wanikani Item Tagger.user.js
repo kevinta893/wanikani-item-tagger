@@ -96,7 +96,6 @@ class TaggerUiFactory{
     var pageUrl = window.location.href;
     if (pageUrl.indexOf('wanikani.com/review/session') >= 0){
       // Review
-      throw new Error('Review page not yet supported');
       return new ReviewTaggerView();
     } else if (pageUrl.indexOf('wanikani.com/lesson/session') >= 0){
       // Lesson
@@ -411,51 +410,69 @@ class LessonTaggerView extends BaseTaggerView{
 class ReviewTaggerView extends BaseTaggerView{
 
   rootElement;
-  css = ``;
+  html = `
+  <div class="tag-ui">
+    <h2 class="tag-ui-h2">Tags</h2>
+    <div id="tag-list"></div>
+    <div>
+      <button id="tag-ui-open-tag-input-btn" class="tag-ui-add-btn" title="Add your own tags" style="display: inline-block;">+</button>
+    <div id="tag-ui-add-tag-form-root" style="display: none;">
+      <input id="tag-ui-tag-input" type="text" autocaptialize="none" autocomplete="on" spellcheck="off" autocorrect="false">
+      <button id="tag-ui-add-tag-btn" class="user-tag-add-btn">+</button>
+    </div>
+  </div>
+  `;
+  css = `
+  .tag-ui-h2{
+    text-align: left;
+  }
+  .tag-ui{
+    position: absolute;
+    top: 75px;
+    right: 20px;
+    padding: 0px 5px 2px;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+    z-index: 99;
+    opacity: 0.8;
+    background-color: darkgray;
+  }
+  .tag-ui-add-btn{
+    display: inline-block;
+  }
+  .tag {
+    cursor: pointer;
+    display: inline-block;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+    margin-right: 0.5em;
+    margin-bottom: 0.5em;
+    background-color: #AA00FF;
+    color: #eee;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+  }
+  `;
   tagListElem;
 
   constructor(){
     super();
 
+    GM_addStyle(this.css);
+
     //Add UI to meaning section of a Lesson (before quiz)
-    var rootElement = $('#item-info-col1');
-
-    var tagSection = $('<div></div>');
-
-    var tagSectionTitle = $('<h2></h2>');
-    tagSectionTitle.text('Tags');
+    var rootElement = $('#question');
+    rootElement.append(this.html);
     
-    var tagList = $('<div></div>');
-    tagList.attr('id', 'tag-list');
+    var tagList = $('#tag-list');
+    var tagInput = $('#tag-ui-tag-input');
 
-    //Input tag button
-    var tagInputButton = $('<button></button>')
-    tagInputButton.addClass('user-tag-add-btn');
-    tagInputButton.attr('title', 'Add your own tags');
-    tagInputButton.attr('style', 'display: inline-block;');
-
-    var addTagFormRoot = $('<div></div>');
-    addTagFormRoot.attr('style', 'display: inline-block;');
-    addTagFormRoot.hide();
-
-    //Tag text input box
-    var tagInput = $('<input></input>');
-    tagInput.attr('type', 'text');
-    tagInput.attr('autocaptialize', 'none');
-    tagInput.attr('autocomplete', 'on');
-    tagInput.attr('spellcheck', 'off');
-    tagInput.attr('autocorrect', 'false');
-    tagInput.addClass('noSwipe');
-    tagInput.off();
-
-    //Confirm button when tag entry is complete
-    var addTagButton = $('<button></button>');
-    addTagButton.addClass('user-tag-add-btn');
-
-    addTagFormRoot.append(tagInput);
-    addTagFormRoot.append(addTagButton);
-
+    
     //Input tag button When clicked, opens up a textbox for tag entry
+    var tagInputButton = $('#tag-ui-open-tag-input-btn');
+    var addTagFormRoot = $('#tag-ui-add-tag-form-root')
     tagInputButton.on('click', () => {
       tagInputButton.hide();
       addTagFormRoot.show();
@@ -481,6 +498,8 @@ class ReviewTaggerView extends BaseTaggerView{
       this.triggerTagAddEvent(newItemModel);
     };
 
+    //Button to confirm button when tag entry is complete
+    var addTagButton = $('#tag-ui-add-tag-btn');
     addTagButton.on('click', tagEnteredCallback);
     tagInput.on('keypress',function(e) {
       if(e.which == 13) {
@@ -488,17 +507,7 @@ class ReviewTaggerView extends BaseTaggerView{
       }
     });
 
-    var ulButtonParent = $('<div></div>');
-    ulButtonParent.append(tagInputButton);
-    ulButtonParent.append(addTagFormRoot);
-
-    tagSection.append(tagSectionTitle);
-    tagSection.append(tagList);
-    tagSection.append(ulButtonParent);
-    
     this.tagListElem = tagList;
-    rootElement.append(tagSection);
-
     this.rootElement = rootElement;
   }
 
@@ -573,7 +582,7 @@ class ReviewTaggerView extends BaseTaggerView{
  */
 class DefinitionTaggerView extends BaseTaggerView{
 
-  cssString = `
+  css = `
     .tag{
       cursor: pointer;
       display: inline-block;
@@ -616,7 +625,7 @@ class DefinitionTaggerView extends BaseTaggerView{
     super();
 
     //Add CSS
-    GM_addStyle(this.cssString);
+    GM_addStyle(this.css);
 
     //Configure the UI for the definition page
     var rootElement = $('#information');
@@ -828,7 +837,7 @@ class TaggerItemDTO{
  * Factory function that converts a wanikani item data object from local storage
  * and maps it to the DTO object WanikaniItem.
  * @param {WanikaniItemModel} wkItemModel A wanikani item data object representing the wanikani item on the page
- * @param {Array} currentTags (optional) An array/list of current user defined tags associated with the item, otherwise it is an empty list
+ * @param {Array} currentTags (optional) An array/list of current user defined tags associated with the item, otherwise it is an empty list by default
  */
 function mapToTaggerItem(wkItemModel, currentTags){
   var taggerItem = new TaggerItemDTO();
@@ -916,7 +925,7 @@ class TamperMonkeyUserDataContext{
 
   writeData(key, value){
     if (key == null || key == ''){
-      throw new Error(`Cannot save with null key. alue=${value}`);
+      throw new Error(`Cannot save with null key. Value=${value}`);
     }
     GM_setValue(key, value);
   }
