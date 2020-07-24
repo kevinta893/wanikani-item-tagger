@@ -582,6 +582,18 @@ class ReviewTaggerView extends BaseTaggerView{
  */
 class DefinitionTaggerView extends BaseTaggerView{
 
+  html = `
+    <div class="alternative-meaning">
+      <h2>Tags</h2>
+      <ul>
+          <li id="tag-ui-open-input-btn" class="tag-ui-add-btn" title="Add your own tags" style="display: inline-block;"></li>
+          <li id="tag-ui-input-form" style="display: none;">
+            <input id="tag-ui-input" type="text" autocaptialize="none" autocomplete="on" spellcheck="off" autocorrect="false" maxlength="100">
+            <button id="tag-ui-input-submit" class="tag-ui-add-btn"></button>
+          </li>
+      </ul>
+    </div>
+  `;
   css = `
     .tag{
       cursor: pointer;
@@ -599,11 +611,11 @@ class DefinitionTaggerView extends BaseTaggerView{
     .tag:hover{
 
     }
-    .user-tag-add-btn {
+    .tag-ui-add-btn {
       cursor: pointer;
       margin-left: 0.3em;
     }
-    .user-tag-add-btn:before {
+    .tag-ui-add-btn:before {
       content: '+ ADD TAG';
       margin-right: 0.5em;
       padding: 0.15em 0.3em;
@@ -629,40 +641,20 @@ class DefinitionTaggerView extends BaseTaggerView{
 
     //Configure the UI for the definition page
     var rootElement = $('#information');
+    var tagContainer = rootElement.append(this.html);
 
-    var tagSection = $('<div></div>');
-    tagSection.addClass('alternative-meaning')
-
-    var tagSectionTitle = $('<h2></h2>');
-    tagSectionTitle.text('Tags');
-
-    //Input tag button
-    var tagInputButton = $('<li></li>')
-    tagInputButton.addClass('user-tag-add-btn');
-    tagInputButton.attr('title', 'Add your own tags');
-    tagInputButton.attr('style', 'display: inline-block;');
-
-    var addTagFormRoot = $('<li></li>');
-    addTagFormRoot.attr('style', 'display: inline-block;');
+    //Form containing tag input ui
+    var addTagFormRoot = $('#tag-ui-input-form');
     addTagFormRoot.hide();
 
-    //Tag text input box
-    var tagInput = $('<input></input>');
-    tagInput.attr('type', 'text');
-    tagInput.attr('autocaptialize', 'none');
-    tagInput.attr('autocomplete', 'on');
-    tagInput.attr('spellcheck', 'off');
-    tagInput.attr('autocorrect', 'false');
-    tagInput.attr('maxlength', '100');
+    //Button that opens up the input ui
+    var tagInputButton = $('#tag-ui-open-input-btn')
 
-    //Confirm button when tag entry is complete
-    var addTagButton = $('<button></button>');
-    addTagButton.addClass('user-tag-add-btn');
+    //Tag input
+    var tagInput = $('#tag-ui-input');
+    var addTagButton = $('#tag-ui-input-submit');
 
-    addTagFormRoot.append(tagInput);
-    addTagFormRoot.append(addTagButton);
-
-    //Input tag button When clicked, opens up a textbox for tag entry
+    //Open up input UI when add tag button clicked
     tagInputButton.on('click', () => {
       tagInputButton.hide();
       addTagFormRoot.show();
@@ -687,6 +679,7 @@ class DefinitionTaggerView extends BaseTaggerView{
       this.triggerTagAddEvent(newTagText);
     };
 
+    //Enter button used to submit
     addTagButton.on('click', tagEnteredCallback);
     tagInput.on('keypress',function(e) {
       if(e.which == 13) {
@@ -694,16 +687,7 @@ class DefinitionTaggerView extends BaseTaggerView{
       }
     });
 
-    var ulButtonParent = $('<ul></ul>');
-    ulButtonParent.append(tagInputButton);
-    ulButtonParent.append(addTagFormRoot);
-
-    tagSection.append(tagSectionTitle);
-    tagSection.append(ulButtonParent);
-    
-    this.tagListElem = ulButtonParent;
-    rootElement.append(tagSection);
-
+    this.tagListElem = tagContainer;
     this.rootElement = rootElement;
   }
 
@@ -728,7 +712,7 @@ class DefinitionTaggerView extends BaseTaggerView{
       this.triggerTagRemoveEvent(tagViewModel);
     });
 
-    this.tagListElem.find('li.user-tag-add-btn').before(newTag);
+    this.tagListElem.find('li.tag-ui-add-btn').before(newTag);
   }
 
   removeTag(tagViewModel){
