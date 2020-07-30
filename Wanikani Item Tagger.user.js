@@ -13,6 +13,7 @@
 // @run-at      document-end
 // @grant       GM_setValue
 // @grant       GM_getValue
+// @grant       GM_listValues
 // @grant       GM_addStyle
 // @connect     *
 // ==/UserScript==
@@ -20,11 +21,220 @@
 
 //Loads user script
 function initialize(){
+  var tagService = new TagService();
   var tagView = TaggerUiFactory.createTaggerUi();
-  var tagController = new TagController(tagView);
-  console.log('Wanikani Item Tagger started.')
+  var tagController = new TagController(tagView, tagService);
+  var tagConfigView = new TagConfigView();
+  var tagConfigController = new TagConfigController(tagConfigView, tagService);
+  
+  tagConfigView.onConfigOpen();
+  console.log('Wanikani Item Tagger started.');
 }
 
+//===================================================
+//Configuration page
+
+class TagConfigView{
+
+  html = `
+  <button id="tag-ui-open-config-btn">Open Modal</button>
+  
+  <div id="tag-ui-config-modal">
+    <div id="tag-ui-config-modal-content">
+      <span id="tag-ui-close-config-btn">&times;</span>
+      <h2>Tag statistics</h2>
+      <p>
+        Tagged Items <span id="tag-ui-tagged-item-count" class="tag-ui-stat-value"></span>
+      </p>
+      <p>
+        Total Number of Tags <span id="tag-ui-tag-count" class="tag-ui-stat-value"></span>
+      </p>
+      <button id="tag-ui-config-export-csv">Export All Tags to CSV</button>
+    </div>
+    <div id="tag-ui-modal-background"></div>
+  </div>
+  `;
+  css = `
+  #tag-ui-config-modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+  }
+  #tag-ui-modal-background{
+    display: block;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgb(0,0,0);
+    background-color: rgba(0,0,0,0.4);
+    z-index: -1;
+    cursor: pointer;
+  }
+  #tag-ui-config-modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    z-index: 1;
+    width: 80%;
+  }
+  
+  #tag-ui-close-config-btn {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  #tag-ui-close-config-btn:hover,
+  #tag-ui-close-config-btn:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .tag-ui-stat-value{
+    font-weight: bold;
+  }
+  `;
+  configModal;
+
+  listenersConfigModalOpened = [];
+  listenersConfigModalClosed = [];
+  listenersConfigCSVExportRequested = [];
+
+  constructor(){
+    $('body').append(this.html);
+    GM_addStyle(this.css);
+
+    // Get the modal
+    var configModal = $('#tag-ui-config-modal');
+    this.configModal = configModal;
+
+    var openConfigBtn = $('#tag-ui-open-config-btn');
+    openConfigBtn.on('click', () => {
+      this.onConfigOpen();
+    });
+
+    var closeBtn = $("#tag-ui-close-config-btn");
+    closeBtn.on('click', () => {
+      this.onConfigClose();
+    });
+
+    // Click outside modal, close
+    var modalBackgroundOverlay = $('#tag-ui-modal-background');
+    modalBackgroundOverlay.on('click', () => {
+      this.onConfigClose();
+    });
+
+    // CSV export button
+    var csvExportBtn = $('tag-ui-config-export-csv');
+    csvExportBtn.on('click', () => {
+      this.exportCsv();
+    });
+  }
+
+  /**
+   * Shows the config modal popup
+   */
+  showConfigModal(){
+    this.configModal.show();
+  }
+
+  /**
+   * Hides the config modal popup
+   */
+  closeConfigModal(){
+    this.configModal.hide();
+  }
+
+  /**
+   * Adds user stats to the config page
+   */
+  showUserStats(statsModel){
+    var taggedItemCountLabel = $('#tag-ui-tagged-item-count');
+    var tagCountLabel = $('#tag-ui-tag-count');
+
+    taggedItemCountLabel.text(statsModel.TaggedItemCount);
+    tagCountLabel.text(statsModel.TotalTagCount);
+  }
+
+  /**
+   * Loads data to the config modal
+   */
+  onConfigOpen(){
+    //Emit event
+    this.listenersConfigModalOpened.forEach(handler => {
+      handler();
+    });
+  }
+
+  /**
+   * Config modal is closed
+   */
+  onConfigClose(){
+    //Emit event
+    this.listenersConfigModalClosed.forEach(handler => {
+      handler();
+    });
+  }
+
+  /**
+   * Starts the csv export process
+   */
+  exportCsv(){
+    //Emit event
+    this.listenersConfigModalClosed.forEach(handler => {
+      handler();
+    });
+  }
+
+  bindOnConfigOpen(handler){
+    this.listenersConfigModalOpened.push(handler);
+  }
+
+  bindOnConfigClose(handler){
+    this.listenersConfigModalClosed.push(handler);
+  }
+
+  bindOnConfigCSVExportRequested(handler){
+    this.listenersConfigCSVExportRequested.push(handler);
+  }
+}
+
+class TagConfigController{
+
+  tagConfigView;
+  tagService;
+
+  constructor(tagConfigView, tagService){
+    this.tagConfigView = tagConfigView;
+    this.tagService = tagService;
+
+    this.tagConfigView.bindOnConfigOpen(() => {
+      var userStats = this.tagService.getUserStats();
+      this.tagConfigView.showUserStats(userStats);
+
+      this.tagConfigView.showConfigModal();
+    });
+
+    this.tagConfigView.bindOnConfigClose(() => {
+      this.tagConfigView.closeConfigModal();
+    });
+
+    this.tagConfigView.bindOnConfigCSVExportRequested(() => {
+
+    });
+  }
+}
 
 //===================================================
 //Controller
@@ -36,9 +246,9 @@ class TagController{
   tagList;
   tagView;
   
-  constructor(tagView){
+  constructor(tagView, tagService){
 
-    this.tagService = new TagService();
+    this.tagService = tagService;
     this.tagView = tagView;
 
     //Listen to tag add or remove events, save updated tags
@@ -859,6 +1069,18 @@ class TagService{
   getItemTags(itemType, itemName){
     return this.tagRepository.getTags(itemType, itemName);
   }
+
+  getUserStats(){
+    var allTaggedItems = this.tagRepository.getAllTaggedItems();
+    var allTags = [].concat.apply([], allTaggedItems.map(item => item.tags));
+    
+    var statsModel = {
+      TaggedItemCount: allTaggedItems.filter(item => item.tags.length > 0).length,
+      TotalTagCount: allTags.length,
+    };
+
+    return statsModel;
+  }
 }
 
 
@@ -894,6 +1116,21 @@ class TagRepository{
   generateStoreKeyFromDto(tagItemDto){
     return this.generateStoreKey(tagItemDto.itemType, tagItemDto.itemName);
   }
+
+  getAllTaggedItems(){
+    var allItemKeys = this.dataContext.getAllItemKeys();
+    var allItems = [];
+
+    // Get only tagged item related data
+    allItemKeys.forEach(itemKey => {
+      if(itemKey.indexOf(this.tagDataStoreKey) == 0){
+        var itemData = this.dataContext.readData(itemKey);
+        allItems.push(itemData);
+      }
+    });
+
+    return allItems;
+  }
 }
 
 //===================================================
@@ -916,6 +1153,10 @@ class TamperMonkeyUserDataContext{
 
   readData(key){
     return GM_getValue(key);
+  }
+
+  getAllItemKeys(){
+    return GM_listValues();
   }
 }
 
