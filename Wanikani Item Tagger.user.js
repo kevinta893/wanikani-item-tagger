@@ -2,7 +2,7 @@
 // @name        Wanikani Item Tagger
 // @namespace   kevinta893
 // @author      kevinta893
-// @description Allows you to tag review items
+// @description Allows you to tag, classify, and organize review items in WaniKani
 // @run-at      document-end
 // @include     https://www.wanikani.com/review/session
 // @include     https://www.wanikani.com/lesson/session
@@ -11,33 +11,45 @@
 // @include     https://www.wanikani.com/vocabulary/*
 // @version     0.0.1
 // @run-at      document-end
-// @grant       GM_setValue
-// @grant       GM_getValue
-// @grant       GM_listValues
+// @grant       GM.setValue
+// @grant       GM.getValue
+// @grant       GM.listValues
 // @grant       GM_addStyle
-// @connect     *
+// @resource    pickr_monolith_style https://cdn.jsdelivr.net/npm/@simonwep/pickr@1.7.2/dist/themes/monolith.min.css
+// @require     https://cdn.jsdelivr.net/npm/@simonwep/pickr@1.7.2/dist/pickr.min.js
 // ==/UserScript==
 
 
 //Loads user script
-function initialize(){
-  var tagService = new TagService();
+function initialize() {
+  // External Styles
+  var pickrMonolithCSS = GM_getResourceText ("pickr_monolith_style");
+  GM_addStyle(pickrMonolithCSS);
+
+  // Data services
+  var dataContext = new TamperMonkeyUserDataContext();
+  var tagRepository = new TagRepository(dataContext);
+  var tagService = new TagService(tagRepository);
+
+  // UI
   var tagView = TaggerUiFactory.createTaggerUi();
   var tagController = new TagController(tagView, tagService);
+
+  // Config UI
   var tagConfigView = new TagConfigView();
   var tagConfigController = new TagConfigController(tagConfigView, tagService);
-  
-  tagConfigView.onConfigOpen();
+
+  //tagConfigView.onConfigOpen();
   console.log('Wanikani Item Tagger started.');
 }
 
 //===================================================
 //Configuration page
 
-class TagConfigView{
+class TagConfigView {
 
   html = `
-  <button id="tag-ui-open-config-btn">Open Modal</button>
+  <span id="tag-ui-open-config-btn">&#x2699;</span>
   
   <div id="tag-ui-config-modal">
     <div id="tag-ui-config-modal-content">
@@ -111,7 +123,7 @@ class TagConfigView{
   listenersConfigModalClosed = [];
   listenersConfigCSVExportRequested = [];
 
-  constructor(){
+  constructor() {
     $('body').append(this.html);
     GM_addStyle(this.css);
 
@@ -145,21 +157,21 @@ class TagConfigView{
   /**
    * Shows the config modal popup
    */
-  showConfigModal(){
+  showConfigModal() {
     this.configModal.show();
   }
 
   /**
    * Hides the config modal popup
    */
-  closeConfigModal(){
+  closeConfigModal() {
     this.configModal.hide();
   }
 
   /**
    * Adds user stats to the config page
    */
-  showUserStats(statsModel){
+  showUserStats(statsModel) {
     var taggedItemCountLabel = $('#tag-ui-tagged-item-count');
     var tagCountLabel = $('#tag-ui-tag-count');
 
@@ -170,7 +182,7 @@ class TagConfigView{
   /**
    * Loads data to the config modal
    */
-  onConfigOpen(){
+  onConfigOpen() {
     //Emit event
     this.listenersConfigModalOpened.forEach(handler => {
       handler();
@@ -180,7 +192,7 @@ class TagConfigView{
   /**
    * Config modal is closed
    */
-  onConfigClose(){
+  onConfigClose() {
     //Emit event
     this.listenersConfigModalClosed.forEach(handler => {
       handler();
@@ -190,39 +202,39 @@ class TagConfigView{
   /**
    * Starts the csv export process
    */
-  exportCsv(){
+  exportCsv() {
     //Emit event
     this.listenersConfigModalClosed.forEach(handler => {
       handler();
     });
   }
 
-  bindOnConfigOpen(handler){
+  bindOnConfigOpen(handler) {
     this.listenersConfigModalOpened.push(handler);
   }
 
-  bindOnConfigClose(handler){
+  bindOnConfigClose(handler) {
     this.listenersConfigModalClosed.push(handler);
   }
 
-  bindOnConfigCSVExportRequested(handler){
+  bindOnConfigCSVExportRequested(handler) {
     this.listenersConfigCSVExportRequested.push(handler);
   }
 }
 
-class TagConfigController{
+class TagConfigController {
 
   tagConfigView;
   tagService;
 
-  constructor(tagConfigView, tagService){
+  constructor(tagConfigView, tagService) {
     this.tagConfigView = tagConfigView;
     this.tagService = tagService;
 
     this.tagConfigView.bindOnConfigOpen(() => {
-      var userStats = this.tagService.getUserStats();
-      this.tagConfigView.showUserStats(userStats);
-
+      this.tagService.getUserStats().then((userStats) => {
+        this.tagConfigView.showUserStats(userStats);
+      });
       this.tagConfigView.showConfigModal();
     });
 
@@ -240,13 +252,13 @@ class TagConfigController{
 //Controller
 //Handles business logic
 
-class TagController{
+class TagController {
   tagService;
   tagInputField;
   tagList;
   tagView;
-  
-  constructor(tagView, tagService){
+
+  constructor(tagView, tagService) {
 
     this.tagService = tagService;
     this.tagView = tagView;
@@ -273,13 +285,14 @@ class TagController{
     this.loadTags();
   }
 
-  loadTags(){
+  loadTags() {
     var currentItem = this.tagView.getCurrentWkItem();
-    var tags = this.tagService.getItemTags(currentItem.itemType, currentItem.itemName);
-    this.tagView.loadTagsToUi(tags);
+    this.tagService.getItemTags(currentItem.itemType, currentItem.itemName).then((tags) => {
+      this.tagView.loadTagsToUi(tags);
+    });
   }
 
-  removeTag(tagText){
+  removeTag(tagText) {
     var rawWkData = this.tagView.getCurrentWkItem();
     var currentTags = this.tagView.getCurrentTags();    // Will contain updated list with tag removed
 
@@ -287,10 +300,10 @@ class TagController{
     this.tagService.updateItemTags(itemData);
   }
 
-  saveTags(tagText){
+  saveTags(tagText) {
     var rawWkData = this.tagView.getCurrentWkItem();
     var currentTags = this.tagView.getCurrentTags();    // Will contain updated list with tag removed
-    
+
     var itemData = mapToTaggerItem(rawWkData, currentTags);
     this.tagService.updateItemTags(itemData);
   }
@@ -300,14 +313,14 @@ class TagController{
  * Creates a tagger UI based on the page
  * that the script is current on
  */
-class TaggerUiFactory{
-  static createTaggerUi(){
+class TaggerUiFactory {
+  static createTaggerUi() {
     //Add UI (depending on page)
     var pageUrl = window.location.href;
-    if (pageUrl.indexOf('wanikani.com/review/session') >= 0){
+    if (pageUrl.indexOf('wanikani.com/review/session') >= 0) {
       // Review
       return new ReviewTaggerView();
-    } else if (pageUrl.indexOf('wanikani.com/lesson/session') >= 0){
+    } else if (pageUrl.indexOf('wanikani.com/lesson/session') >= 0) {
       // Lesson
       throw new Error('Lesson page not yet supported');
       return new LessonTaggerView();
@@ -315,7 +328,7 @@ class TaggerUiFactory{
       pageUrl.indexOf('wanikani.com/radicals') >= 0 ||
       pageUrl.indexOf('wanikani.com/kanji') >= 0 ||
       pageUrl.indexOf('wanikani.com/vocabulary') >= 0
-    ){
+    ) {
       //Wanikani item definition pages
       return new DefinitionTaggerView();
     } else {
@@ -333,21 +346,21 @@ class TaggerUiFactory{
  * When constructed, the subclasses of this UI should
  * self attach itself to the page.
  */
-class BaseTaggerView{
+class BaseTaggerView {
 
   listenersTagAdded = [];
   listenersTagRemoved = [];
   listenersItemChanged = [];
 
-  constructor(){
+  constructor() {
 
   }
 
-  addTag(tagText){
+  addTag(tagText) {
     //Private
   }
 
-  removeTag(tagText){
+  removeTag(tagText) {
     //Private
   }
 
@@ -356,24 +369,24 @@ class BaseTaggerView{
    * for display
    * @param {Array} tagList 
    */
-  loadTagsToUi(tagList){
+  loadTagsToUi(tagList) {
   }
 
-  triggerTagAddEvent(tagText){
+  triggerTagAddEvent(tagText) {
     //Private
     this.listenersTagAdded.forEach(func => {
       func(tagText);
     });
   }
 
-  triggerTagRemoveEvent(tagText){
+  triggerTagRemoveEvent(tagText) {
     //Private
     this.listenersTagRemoved.forEach(func => {
       func(tagText);
     });
   }
 
-  triggerItemChangedEvent(tagText){
+  triggerItemChangedEvent(tagText) {
     //Private
     this.listenersItemChanged.forEach(func => {
       func(tagText);
@@ -385,7 +398,7 @@ class BaseTaggerView{
    * a new tag entered by the user
    * @param {function} callback 
    */
-  onTagAdd(callback){
+  onTagAdd(callback) {
     this.listenersTagAdded.push(callback);
   }
 
@@ -394,7 +407,7 @@ class BaseTaggerView{
    * a new tag is removed by the user
    * @param {function} callback 
    */
-  onTagRemove(callback){
+  onTagRemove(callback) {
     this.listenersTagRemoved.push(callback);
   }
 
@@ -404,7 +417,7 @@ class BaseTaggerView{
    * Executes once when the script is started
    * @param {function} callback 
    */
-  onItemChanged(callback){
+  onItemChanged(callback) {
     this.listenersItemChanged.push(callback);
   }
 
@@ -412,14 +425,14 @@ class BaseTaggerView{
    * Gets the current tag strings that are 
    * being displayed by the UI currently
    */
-  getCurrentTags(){
+  getCurrentTags() {
 
   }
 
   /**
    * Gets the current WaniKani item data from the page
    */
-  getCurrentWkItem(){
+  getCurrentWkItem() {
 
   }
 }
@@ -431,13 +444,13 @@ class BaseTaggerView{
  * The lesson itself also contains 3 different versions
  * of the information cards, which all need the tagger UI
  */
-class LessonTaggerView extends BaseTaggerView{
+class LessonTaggerView extends BaseTaggerView {
 
   rootElement;
   css = ``;
   tagListElem;
 
-  constructor(){
+  constructor() {
     super();
 
     //Add UI to meaning section of a Lesson (before quiz)
@@ -458,7 +471,7 @@ class LessonTaggerView extends BaseTaggerView{
 
     var tagSectionTitle = $('<h2></h2>');
     tagSectionTitle.text('Tags');
-    
+
     var tagList = $('<div></div>');
     tagList.attr('id', 'tag-list');
 
@@ -516,8 +529,8 @@ class LessonTaggerView extends BaseTaggerView{
     };
 
     addTagButton.on('click', tagEnteredCallback);
-    tagInput.on('keypress',function(e) {
-      if(e.which == 13) {
+    tagInput.on('keypress', function (e) {
+      if (e.which == 13) {
         tagEnteredCallback();
       }
     });
@@ -529,7 +542,7 @@ class LessonTaggerView extends BaseTaggerView{
     tagSection.append(tagSectionTitle);
     tagSection.append(tagList);
     tagSection.append(ulButtonParent);
-    
+
     this.tagListElem = tagList;
     rootElement.append(tagSection);
 
@@ -540,7 +553,7 @@ class LessonTaggerView extends BaseTaggerView{
     $.jStorage.listenKeyChange('l/currentLesson', itemChangedEvent);
   }
 
-  loadTagsToUi(tagList){
+  loadTagsToUi(tagList) {
     this.tagListElem.find('.tag').remove();
 
     tagList.forEach(tag => {
@@ -548,7 +561,7 @@ class LessonTaggerView extends BaseTaggerView{
     });
   }
 
-  addTag(tagViewModel){
+  addTag(tagViewModel) {
     var newTag = $('<li></li>');
     //TODO Sanitize html
     newTag.addClass('tag');
@@ -564,27 +577,27 @@ class LessonTaggerView extends BaseTaggerView{
     this.tagListElem.append(newTag);
   }
 
-  removeTag(tagViewModel){
+  removeTag(tagViewModel) {
     this.tagListElem.find(`.tag[value="${tagViewModel.tagText}"]`).get(0).remove();
   }
 
-  getCurrentTags(){
+  getCurrentTags() {
     var currentTags = this.tagListElem.find('.tag')
       .map((i, tagElem) => $(tagElem).data('view-model'));
     return Array.from(currentTags);
   }
 
-  getCurrentWkItem(){
+  getCurrentWkItem() {
     // TODO Move this to a "data provider" kind of class
     // For fetching raw data off the current page
     //Gather data from page
     var pageUrl = window.location.href;
     var currentItem;
-    if (pageUrl.indexOf('lesson') >= 0){
+    if (pageUrl.indexOf('lesson') >= 0) {
       //In lesson section
       currentItem = $.jStorage.get('l/currentLesson');
     }
-    else{
+    else {
       //In quiz section 
       currentItem = $.jStorage.get('l/currentQuizItem');
     }
@@ -594,19 +607,19 @@ class LessonTaggerView extends BaseTaggerView{
     //Determine item type
     var itemType = '';
     var itemName = '';
-    if (currentItem.hasOwnProperty('voc')){
+    if (currentItem.hasOwnProperty('voc')) {
       itemType = ItemTypes.Vocabulary;
       itemName = currentItem.voc;
-    } 
-    else if (currentItem.hasOwnProperty('kan')){
+    }
+    else if (currentItem.hasOwnProperty('kan')) {
       itemType = ItemTypes.Kanji;
       itemName = currentItem.kan;
     }
-    else if (currentItem.hasOwnProperty('rad')){
+    else if (currentItem.hasOwnProperty('rad')) {
       itemType = ItemTypes.Radical;
       itemName = currentItem.rad;
     }
-    
+
     wkItemData.itemName = itemName;
     wkItemData.itemType = itemType;
 
@@ -617,14 +630,14 @@ class LessonTaggerView extends BaseTaggerView{
 /**
  * Tagger UI for the review page
  */
-class ReviewTaggerView extends BaseTaggerView{
+class ReviewTaggerView extends BaseTaggerView {
 
   rootElement;
   html = `
   <div class="tag-ui">
     <h2 class="tag-ui-h2">Tags</h2>
-    <div id="tag-list"></div>
     <div>
+      <div id="tag-list"></div>
       <button id="tag-ui-open-tag-input-btn" class="tag-ui-add-btn" title="Add your own tags" style="display: inline-block;">+</button>
     <div id="tag-ui-add-tag-form-root" style="display: none;">
       <input id="tag-ui-tag-input" type="text" autocaptialize="none" autocomplete="on" spellcheck="off" autocorrect="false">
@@ -667,7 +680,7 @@ class ReviewTaggerView extends BaseTaggerView{
   `;
   tagListElem;
 
-  constructor(){
+  constructor() {
     super();
 
     GM_addStyle(this.css);
@@ -675,11 +688,10 @@ class ReviewTaggerView extends BaseTaggerView{
     //Add UI to meaning section of a Lesson (before quiz)
     var rootElement = $('#question');
     rootElement.append(this.html);
-    
+
     var tagList = $('#tag-list');
     var tagInput = $('#tag-ui-tag-input');
 
-    
     //Input tag button When clicked, opens up a textbox for tag entry
     var tagInputButton = $('#tag-ui-open-tag-input-btn');
     var addTagFormRoot = $('#tag-ui-add-tag-form-root')
@@ -711,8 +723,8 @@ class ReviewTaggerView extends BaseTaggerView{
     //Button to confirm button when tag entry is complete
     var addTagButton = $('#tag-ui-add-tag-btn');
     addTagButton.on('click', tagEnteredCallback);
-    tagInput.on('keypress',function(e) {
-      if(e.which == 13) {
+    tagInput.on('keypress', function (e) {
+      if (e.which == 13) {
         tagEnteredCallback();
       }
     });
@@ -721,7 +733,7 @@ class ReviewTaggerView extends BaseTaggerView{
     this.rootElement = rootElement;
   }
 
-  loadTagsToUi(tagList){
+  loadTagsToUi(tagList) {
     this.tagListElem.find('.tag').remove();
 
     tagList.forEach(tag => {
@@ -729,7 +741,7 @@ class ReviewTaggerView extends BaseTaggerView{
     });
   }
 
-  addTag(tagViewModel){
+  addTag(tagViewModel) {
     var newTag = $('<li></li>');
     //TODO Sanitize html
     newTag.addClass('tag');
@@ -745,17 +757,17 @@ class ReviewTaggerView extends BaseTaggerView{
     this.tagListElem.append(newTag);
   }
 
-  removeTag(tagViewModel){
+  removeTag(tagViewModel) {
     this.tagListElem.find(`.tag[value="${tagViewModel.tagText}"]`).get(0).remove();
   }
 
-  getCurrentTags(){
+  getCurrentTags() {
     var currentTags = this.tagListElem.find('.tag')
       .map((i, tagElem) => $(tagElem).data('view-model'));
     return Array.from(currentTags);
   }
 
-  getCurrentWkItem(){
+  getCurrentWkItem() {
     // TODO Move this to a "data provider" kind of class
     // For fetching raw data off the current page
     //Gather data from page
@@ -766,19 +778,19 @@ class ReviewTaggerView extends BaseTaggerView{
     //Determine item type
     var itemType = '';
     var itemName = '';
-    if (currentItem.hasOwnProperty('voc')){
+    if (currentItem.hasOwnProperty('voc')) {
       itemType = ItemTypes.Vocabulary;
       itemName = currentItem.voc;
-    } 
-    else if (currentItem.hasOwnProperty('kan')){
+    }
+    else if (currentItem.hasOwnProperty('kan')) {
       itemType = ItemTypes.Kanji;
       itemName = currentItem.kan;
     }
-    else if (currentItem.hasOwnProperty('rad')){
+    else if (currentItem.hasOwnProperty('rad')) {
       itemType = ItemTypes.Radical;
       itemName = currentItem.rad;
     }
-    
+
     wkItemData.itemName = itemName;
     wkItemData.itemType = itemType;
 
@@ -790,7 +802,7 @@ class ReviewTaggerView extends BaseTaggerView{
  * UI for the definition pages on Wanikani
  * For radicals, kanji, and vocabulary pages
  */
-class DefinitionTaggerView extends BaseTaggerView{
+class DefinitionTaggerView extends BaseTaggerView {
 
   html = `
     <div class="alternative-meaning">
@@ -799,6 +811,7 @@ class DefinitionTaggerView extends BaseTaggerView{
           <li id="tag-ui-open-input-btn" class="tag-ui-add-btn" title="Add your own tags" style="display: inline-block;"></li>
           <li id="tag-ui-input-form" style="display: none;">
             <input id="tag-ui-input" type="text" autocaptialize="none" autocomplete="on" spellcheck="off" autocorrect="false" maxlength="100">
+            <div id="tag-color-picker"></div>
             <button id="tag-ui-input-submit" class="tag-ui-add-btn"></button>
           </li>
       </ul>
@@ -812,7 +825,6 @@ class DefinitionTaggerView extends BaseTaggerView{
       padding-right: 0.5em;
       margin-right: 0.5em;
       margin-bottom: 0.5em;
-      background-color: #AA00FF;
       color: #eee;
       -webkit-border-radius: 3px;
       -moz-border-radius: 3px;
@@ -842,8 +854,9 @@ class DefinitionTaggerView extends BaseTaggerView{
   `;
   rootElement;
   tagListElem;
+  colorPicker;
 
-  constructor(){
+  constructor() {
     super();
 
     //Add CSS
@@ -864,6 +877,8 @@ class DefinitionTaggerView extends BaseTaggerView{
     var tagInput = $('#tag-ui-input');
     var addTagButton = $('#tag-ui-input-submit');
 
+    this.colorPicker = new TagColorPickerView('#tag-color-picker');
+
     //Open up input UI when add tag button clicked
     tagInputButton.on('click', () => {
       tagInputButton.hide();
@@ -882,6 +897,7 @@ class DefinitionTaggerView extends BaseTaggerView{
 
       var newItemModel = new TaggerItemViewModel();
       newItemModel.tagText = newTagText;
+      newItemModel.tagColor = this.colorPicker.getSelectedColor();
 
       this.addTag(newItemModel);
 
@@ -890,9 +906,11 @@ class DefinitionTaggerView extends BaseTaggerView{
     };
 
     //Enter button used to submit
-    addTagButton.on('click', tagEnteredCallback);
-    tagInput.on('keypress',function(e) {
-      if(e.which == 13) {
+    addTagButton.on('click', () => {
+      tagEnteredCallback();
+    });
+    tagInput.on('keypress', function (e) {
+      if (e.which == 13) {
         tagEnteredCallback();
       }
     });
@@ -901,7 +919,7 @@ class DefinitionTaggerView extends BaseTaggerView{
     this.rootElement = rootElement;
   }
 
-  loadTagsToUi(tagList){
+  loadTagsToUi(tagList) {
     this.tagListElem.find('.tag').remove();
 
     tagList.forEach(tag => {
@@ -909,12 +927,13 @@ class DefinitionTaggerView extends BaseTaggerView{
     });
   }
 
-  addTag(tagViewModel){
+  addTag(tagViewModel) {
     var newTag = $('<li></li>');
     //TODO Sanitize html
     newTag.addClass('tag');
     newTag.attr('title', 'Click to remove tag');
     newTag.attr('value', tagViewModel.tagText);
+    newTag.css('background-color', tagViewModel.tagColor);
     newTag.data('view-model', tagViewModel);
     newTag.text(tagViewModel.tagText);
     newTag.on('click', () => {
@@ -925,17 +944,17 @@ class DefinitionTaggerView extends BaseTaggerView{
     this.tagListElem.find('li.tag-ui-add-btn').before(newTag);
   }
 
-  removeTag(tagViewModel){
+  removeTag(tagViewModel) {
     this.tagListElem.find(`.tag[value="${tagViewModel.tagText}"]`).get(0).remove();
   }
 
-  getCurrentTags(){
+  getCurrentTags() {
     var currentTags = this.tagListElem.find('.tag')
       .map((i, tagElem) => $(tagElem).data('view-model'));
     return Array.from(currentTags);
   }
 
-  getCurrentWkItem(){
+  getCurrentWkItem() {
     // Fetches item data off the current page
     // Gathers data from page
     var url = new URL(window.location.href);
@@ -944,11 +963,56 @@ class DefinitionTaggerView extends BaseTaggerView{
     var itemName = decodeURIComponent(pageUrlPathParts[2]);
 
     var wkItemData = new WanikaniItemModel();
-    
+
     wkItemData.itemName = itemName;
     wkItemData.itemType = itemType;
 
     return wkItemData;
+  }
+}
+
+//===================================================
+//Color picker UI
+//Uses pickr
+//https://github.com/Simonwep/pickr
+
+class TagColorPickerView{
+  colorPicker;
+
+  constructor(replaceElementSelector){
+    const defaultSwatch = [
+      '#F15A5A',
+      '#F0C419',
+      '#4EBA6F',
+      '#2D95BF',
+      '#955BA5',
+    ];
+    this.colorPicker = Pickr.create({
+      el: replaceElementSelector,
+      theme: 'monolith',
+
+      palette: true,
+      swatches: defaultSwatch,
+      default: defaultSwatch[4],
+
+      components: {
+        // Main components
+        preview: true,
+        opacity: false,
+        hue: true,
+
+        // Input / output Options
+        interaction: {
+          rgb: true,
+          input: true,
+          save: true
+        }
+      }
+    });
+  }
+  
+  getSelectedColor(){
+    return this.colorPicker.getSelectedColor().toHEXA().toString();
   }
 }
 
@@ -966,15 +1030,15 @@ const ItemTypes = {
  * Converts definition page url item type to the ItemTypes enum
  * @param {string} urlItemType The item type based on the definition page URL
  */
-function mapUrlItemTypeToItemType(urlItemType){
+function mapUrlItemTypeToItemType(urlItemType) {
   //TODO Refactor this into the definitions UI class since it is only used there.
-  if (urlItemType.toLowerCase() == 'vocabulary'){
+  if (urlItemType.toLowerCase() == 'vocabulary') {
     return ItemTypes.Vocabulary;
-  } 
-  else if (urlItemType.toLowerCase() == 'kanji'){
+  }
+  else if (urlItemType.toLowerCase() == 'kanji') {
     return ItemTypes.Kanji;
   }
-  else if (urlItemType.toLowerCase() == 'radicals'){
+  else if (urlItemType.toLowerCase() == 'radicals') {
     return ItemTypes.Radical;
   }
 
@@ -988,7 +1052,7 @@ function mapUrlItemTypeToItemType(urlItemType){
  * An object model of the Wanikani item
  * Contains only data that can be extracted from WaniKani
  */
-class WanikaniItemModel{
+class WanikaniItemModel {
   itemName = '';
   itemType = '';
 }
@@ -1001,9 +1065,9 @@ class WanikaniItemModel{
  * Represents data for 1 tag
  * Contains information on how to display the tag on the UI
  */
-class TaggerItemViewModel{
+class TaggerItemViewModel {
   tagText = '';
-  tagColor = '#AA00FF';
+  tagColor = '';     //Hexadecimal color
 }
 
 //===================================================
@@ -1014,7 +1078,7 @@ class TaggerItemViewModel{
  * the relevant WaniKani item data required
  * for the tagger's main functions
  */
-class TaggerItemDTO{
+class TaggedItemDTO {
 
   //Wanikani app official fields
   itemType = '';
@@ -1023,7 +1087,7 @@ class TaggerItemDTO{
   //Item Tagger fields
   tags = [];    //a list of type TaggerItemViewModel
 
-  constructor(){
+  constructor() {
   }
 }
 
@@ -1033,17 +1097,17 @@ class TaggerItemDTO{
  * @param {WanikaniItemModel} wkItemModel A wanikani item data object representing the wanikani item on the page
  * @param {Array} currentTags (optional) An array/list of current user defined tags associated with the item, otherwise it is an empty list by default
  */
-function mapToTaggerItem(wkItemModel, currentTags){
-  var taggerItem = new TaggerItemDTO();
+function mapToTaggerItem(wkItemModel, currentTags) {
+  var taggerItem = new TaggedItemDTO();
 
   //Current tags is null, default to empty list
-  if (currentTags == null){ currentTags = []; }
+  if (currentTags == null) { currentTags = []; }
 
   //Map fields
   taggerItem.itemName = wkItemModel.itemName;
   taggerItem.itemType = wkItemModel.itemType;
   taggerItem.tags = currentTags;
-  
+
   return taggerItem;
 }
 
@@ -1054,26 +1118,26 @@ function mapToTaggerItem(wkItemModel, currentTags){
  * Manages tag data, transforming it to something
  * that can be saved for later
  */
-class TagService{
+class TagService {
   tagRepository;
-  
-  constructor(){
-    this.tagRepository = new TagRepository();
+
+  constructor(tagRepository) {
+    this.tagRepository = tagRepository;
   }
 
-  updateItemTags(tagItemDto){
+  async updateItemTags(tagItemDto) {
     console.debug(tagItemDto);
-    this.tagRepository.saveTag(tagItemDto);
+    await this.tagRepository.saveTag(tagItemDto);
   }
 
-  getItemTags(itemType, itemName){
-    return this.tagRepository.getTags(itemType, itemName);
+  async getItemTags(itemType, itemName) {
+    return await this.tagRepository.getTags(itemType, itemName);
   }
 
-  getUserStats(){
-    var allTaggedItems = this.tagRepository.getAllTaggedItems();
+  async getUserStats() {
+    var allTaggedItems = await this.tagRepository.getAllTaggedItems();
     var allTags = [].concat.apply([], allTaggedItems.map(item => item.tags));
-    
+
     var statsModel = {
       TaggedItemCount: allTaggedItems.filter(item => item.tags.length > 0).length,
       TotalTagCount: allTags.length,
@@ -1090,46 +1154,46 @@ class TagService{
 /**
  * Manages raw tag data, storing and reading raw data
  */
-class TagRepository{
+class TagRepository {
   tagDataStoreKey = "tag-data";
   dataContext;
 
-  constructor(){
-    this.dataContext = new TamperMonkeyUserDataContext();
+  constructor(dataContext) {
+    this.dataContext = dataContext;
   }
 
-  saveTag(tagItemDto){
+  async saveTag(tagItemDto) {
     var key = this.generateStoreKeyFromDto(tagItemDto);
-    this.dataContext.writeData(key, tagItemDto);
+    return await this.dataContext.writeData(key, tagItemDto);
   }
 
-  getTags(itemType, itemName){
+  async getTags(itemType, itemName) {
     var key = this.generateStoreKey(itemType, itemName);
-    var itemData = this.dataContext.readData(key);
+    var itemData = await this.dataContext.readData(key);
     return itemData == null ? [] : itemData.tags;
   }
 
-  generateStoreKey(itemType, itemName){
+  generateStoreKey(itemType, itemName) {
     return `${this.tagDataStoreKey}/${itemType.toLowerCase()}/${itemName}`;
   }
 
-  generateStoreKeyFromDto(tagItemDto){
+  generateStoreKeyFromDto(tagItemDto) {
     return this.generateStoreKey(tagItemDto.itemType, tagItemDto.itemName);
   }
 
-  getAllTaggedItems(){
-    var allItemKeys = this.dataContext.getAllItemKeys();
+  async getAllTaggedItems() {
+    var allItemKeys = await this.dataContext.getAllItemKeys();
     var allItems = [];
 
-    // Get only tagged item related data
     allItemKeys.forEach(itemKey => {
-      if(itemKey.indexOf(this.tagDataStoreKey) == 0){
+      // Get only tagged item related data
+      if (itemKey.indexOf(this.tagDataStoreKey) == 0) {
         var itemData = this.dataContext.readData(itemKey);
         allItems.push(itemData);
       }
     });
 
-    return allItems;
+    return await Promise.all(allItems);
   }
 }
 
@@ -1137,26 +1201,42 @@ class TagRepository{
 //Data context
 
 /**
- * Saves/retrieves data to user data storage
+ * Saves/retrieves data to userscript data storage
+ * Note the GM. variant returns Promises
  */
-class TamperMonkeyUserDataContext{
+class TamperMonkeyUserDataContext {
 
-  constructor(){
+  constructor() {
   }
 
-  writeData(key, value){
-    if (key == null || key == ''){
+  /**
+   * Sets data to the Tampermonkey user store
+   * @param {*} key Key
+   * @param {*} value Value
+   * @returns Promise with no value on success, no value for rejected
+   */
+  writeData(key, value) {
+    if (key == null || key == '') {
       throw new Error(`Cannot save with null key. Value=${value}`);
     }
-    GM_setValue(key, value);
+    return GM.setValue(key, value)
   }
 
-  readData(key){
-    return GM_getValue(key);
+  /**
+   * Get the value associated for the key
+   * @param {*} key Key to fetch
+   * @returns Promise
+   */
+  readData(key) {
+    return GM.getValue(key);
   }
 
-  getAllItemKeys(){
-    return GM_listValues();
+  /**
+   * Gets all items
+   * @returns Promise
+   */
+  getAllItemKeys() {
+    return GM.listValues();
   }
 }
 
