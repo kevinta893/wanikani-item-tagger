@@ -23,21 +23,22 @@
 //Loads user script
 function initialize() {
   // External Styles
-  var pickrMonolithCSS = GM_getResourceText ("pickr_monolith_style");
+  var pickrMonolithCSS = GM_getResourceText("pickr_monolith_style");
   GM_addStyle(pickrMonolithCSS);
 
   // Data services
   var dataContext = new TamperMonkeyUserDataContext();
+  var reviewItemRepository = new ReviewItemRepository(dataContext);
   var tagRepository = new TagRepository(dataContext);
-  var tagService = new TagService(tagRepository);
+  var tagService = new ReviewItemService(reviewItemRepository, tagRepository);
 
   // UI
   var tagView = TaggerUiFactory.createTaggerUi();
-  var tagController = new TagController(tagView, tagService);
+  var taggerController = new TaggerController(tagView, tagService);
 
   // Config UI
-  var tagConfigView = new TagConfigView();
-  var tagConfigController = new TagConfigController(tagConfigView, tagService);
+  var taggerConfigView = new TaggerConfigView();
+  var taggerConfigController = new TaggerConfigController(taggerConfigView, tagService);
 
   //tagConfigView.onConfigOpen();
   console.log('Wanikani Item Tagger started.');
@@ -46,7 +47,7 @@ function initialize() {
 //===================================================
 //Configuration page
 
-class TagConfigView {
+class TaggerConfigView {
 
   html = `
   <span id="tag-ui-open-config-btn">&#x2699;</span>
@@ -222,7 +223,7 @@ class TagConfigView {
   }
 }
 
-class TagConfigController {
+class TaggerConfigController {
 
   tagConfigView;
   tagService;
@@ -252,60 +253,52 @@ class TagConfigController {
 //Controller
 //Handles business logic
 
-class TagController {
-  tagService;
+class TaggerController {
+  reviewItemService;
   tagInputField;
   tagList;
   tagView;
 
-  constructor(tagView, tagService) {
-
-    this.tagService = tagService;
+  constructor(tagView, reviewItemService) {
+    this.reviewItemService = reviewItemService;
     this.tagView = tagView;
 
     //Listen to tag add or remove events, save updated tags
-    this.tagView.onTagAdd((tagViewModel) => {
-      this.saveTags(tagViewModel);
+    this.tagView.bindTagAdded((reviewItemViewModel) => {
+      this.saveReviewItem(reviewItemViewModel);
     });
-    this.tagView.onTagRemove((tagViewModel) => {
-      this.removeTag(tagViewModel);
+    this.tagView.bindTagRemoved((reviewItemViewModel) => {
+      this.saveReviewItem(reviewItemViewModel);
     });
 
     //Item changed event handler
-    var itemChangedEvent = (key, callback) => {
-      var currentItem = this.tagView.getCurrentWkItem();
-
-      var storedTags = this.tagService.getItemTags(currentItem.itemType, currentItem.itemName);
-      this.tagView.loadTagsToUi(storedTags);
+    var itemChangedEvent = (wkItemData) => {
+      var reviewItem = this.reviewItemService.getReviewItem(wkItemData.itemType, wkItemData.itemName).then((reviewItemViewModel) => {
+        this.tagView.loadTagsToUi(reviewItemViewModel);
+      });
     }
 
-    this.tagView.onItemChanged(itemChangedEvent);
+    this.tagView.bindReviewItemChanged(itemChangedEvent);
 
     // Load tag data to page
     this.loadTags();
   }
 
   loadTags() {
-    var currentItem = this.tagView.getCurrentWkItem();
-    this.tagService.getItemTags(currentItem.itemType, currentItem.itemName).then((tags) => {
-      this.tagView.loadTagsToUi(tags);
+    var currentItem = this.tagView.getCurrentWkItemData();
+    this.reviewItemService.getReviewItem(currentItem.itemType, currentItem.itemName).then((reviewItemViewModel) => {
+      if (reviewItemViewModel == null) {
+        reviewItemViewModel = new ReviewItemViewModel();
+        reviewItemViewModel.itemName = currentItem.itemName;
+        reviewItemViewModel.itemType = currentItem.itemType;
+        this.reviewItemService.putReviewItem(reviewItemViewModel);
+      }
+      this.tagView.loadReviewItem(reviewItemViewModel);
     });
   }
 
-  removeTag(tagText) {
-    var rawWkData = this.tagView.getCurrentWkItem();
-    var currentTags = this.tagView.getCurrentTags();    // Will contain updated list with tag removed
-
-    var itemData = mapToTaggerItem(rawWkData, currentTags);
-    this.tagService.updateItemTags(itemData);
-  }
-
-  saveTags(tagText) {
-    var rawWkData = this.tagView.getCurrentWkItem();
-    var currentTags = this.tagView.getCurrentTags();    // Will contain updated list with tag removed
-
-    var itemData = mapToTaggerItem(rawWkData, currentTags);
-    this.tagService.updateItemTags(itemData);
+  saveReviewItem(reviewItemViewModel) {
+    this.reviewItemService.updateReviewItem(reviewItemViewModel);
   }
 }
 
@@ -348,77 +341,16 @@ class TaggerUiFactory {
  */
 class BaseTaggerView {
 
-  listenersTagAdded = [];
-  listenersTagRemoved = [];
-  listenersItemChanged = [];
-
   constructor() {
 
-  }
-
-  addTag(tagText) {
-    //Private
-  }
-
-  removeTag(tagText) {
-    //Private
   }
 
   /**
    * Loads a list of tag strings to the UI
    * for display
-   * @param {Array} tagList 
+   * @param {ReviewItemViewModel} tagList 
    */
-  loadTagsToUi(tagList) {
-  }
-
-  triggerTagAddEvent(tagText) {
-    //Private
-    this.listenersTagAdded.forEach(func => {
-      func(tagText);
-    });
-  }
-
-  triggerTagRemoveEvent(tagText) {
-    //Private
-    this.listenersTagRemoved.forEach(func => {
-      func(tagText);
-    });
-  }
-
-  triggerItemChangedEvent(tagText) {
-    //Private
-    this.listenersItemChanged.forEach(func => {
-      func(tagText);
-    });
-  }
-
-  /**
-   * Adds a listener for when the UI recieves
-   * a new tag entered by the user
-   * @param {function} callback 
-   */
-  onTagAdd(callback) {
-    this.listenersTagAdded.push(callback);
-  }
-
-  /**
-   * Adds a listener for when the UI recieves
-   * a new tag is removed by the user
-   * @param {function} callback 
-   */
-  onTagRemove(callback) {
-    this.listenersTagRemoved.push(callback);
-  }
-
-  /**
-   * Adds a listener for when the UI recieves
-   * a review item changed event
-   * Executes once when the script is started
-   * @param {function} callback 
-   */
-  onItemChanged(callback) {
-    this.listenersItemChanged.push(callback);
+  loadReviewItem(reviewItemViewModel) {
   }
 
   /**
@@ -432,8 +364,7 @@ class BaseTaggerView {
   /**
    * Gets the current WaniKani item data from the page
    */
-  getCurrentWkItem() {
-
+  getCurrentWkItemData() {
   }
 }
 
@@ -519,7 +450,7 @@ class LessonTaggerView extends BaseTaggerView {
       addTagFormRoot.hide();
       tagInputButton.show();
 
-      var newItemModel = new TaggerItemViewModel();
+      var newItemModel = new TagViewModel();
       newItemModel.tagText = newTagText;
 
       this.addTag(newItemModel);
@@ -587,7 +518,7 @@ class LessonTaggerView extends BaseTaggerView {
     return Array.from(currentTags);
   }
 
-  getCurrentWkItem() {
+  getCurrentWkItemData() {
     // TODO Move this to a "data provider" kind of class
     // For fetching raw data off the current page
     //Gather data from page
@@ -602,7 +533,7 @@ class LessonTaggerView extends BaseTaggerView {
       currentItem = $.jStorage.get('l/currentQuizItem');
     }
 
-    var wkItemData = new WanikaniItemModel();
+    var wkItemData = new WanikaniItemDataModel();
 
     //Determine item type
     var itemType = '';
@@ -711,7 +642,7 @@ class ReviewTaggerView extends BaseTaggerView {
       addTagFormRoot.hide();
       tagInputButton.show();
 
-      var newItemModel = new TaggerItemViewModel();
+      var newItemModel = new TagViewModel();
       newItemModel.tagText = newTagText;
 
       this.addTag(newItemModel);
@@ -767,13 +698,13 @@ class ReviewTaggerView extends BaseTaggerView {
     return Array.from(currentTags);
   }
 
-  getCurrentWkItem() {
+  getCurrentWkItemData() {
     // TODO Move this to a "data provider" kind of class
     // For fetching raw data off the current page
     //Gather data from page
     var currentItem = $.jStorage.get("currentItem");
 
-    var wkItemData = new WanikaniItemModel();
+    var wkItemData = new WanikaniItemDataModel();
 
     //Determine item type
     var itemType = '';
@@ -813,9 +744,15 @@ class DefinitionTaggerView extends BaseTaggerView {
             <input id="tag-ui-input" type="text" autocaptialize="none" autocomplete="on" spellcheck="off" autocorrect="false" maxlength="100">
             <div id="tag-color-picker"></div>
             <button id="tag-ui-input-submit" class="tag-ui-add-btn"></button>
+
+            <div id="tag-list-selected"></div>
+            <div id="tag-recent-list"></div>
           </li>
       </ul>
     </div>
+  `;
+  newTagHtml = `
+    <li class="tag" title="Click to remove tag"></li>
   `;
   css = `
     .tag{
@@ -856,6 +793,10 @@ class DefinitionTaggerView extends BaseTaggerView {
   tagListElem;
   colorPicker;
 
+  eventTagAdded = new EventEmitter();
+  eventTagRemoved = new EventEmitter();
+  eventTagReviewItemChanged = new EventEmitter();
+
   constructor() {
     super();
 
@@ -895,20 +836,19 @@ class DefinitionTaggerView extends BaseTaggerView {
       addTagFormRoot.hide();
       tagInputButton.show();
 
-      var newItemModel = new TaggerItemViewModel();
+      var newItemModel = new TagViewModel();
       newItemModel.tagText = newTagText;
       newItemModel.tagColor = this.colorPicker.getSelectedColor();
 
       this.addTag(newItemModel);
 
       //Trigger event callbacks
-      this.triggerTagAddEvent(newTagText);
+      var reviewItemViewModel = this.getCurrentReviewItemViewModel();
+      this.eventTagAdded.emit(reviewItemViewModel);
     };
 
     //Enter button used to submit
-    addTagButton.on('click', () => {
-      tagEnteredCallback();
-    });
+    addTagButton.on('click', tagEnteredCallback);
     tagInput.on('keypress', function (e) {
       if (e.which == 13) {
         tagEnteredCallback();
@@ -917,28 +857,29 @@ class DefinitionTaggerView extends BaseTaggerView {
 
     this.tagListElem = tagContainer;
     this.rootElement = rootElement;
+
+    this.eventTagReviewItemChanged.emit(this.getCurrentWkItemData());
   }
 
-  loadTagsToUi(tagList) {
+  loadReviewItem(reviewItemViewModel) {
     this.tagListElem.find('.tag').remove();
 
-    tagList.forEach(tag => {
-      this.addTag(tag);
+    reviewItemViewModel.tags.forEach(tagViewModel => {
+      this.addTag(tagViewModel);
     });
   }
 
   addTag(tagViewModel) {
-    var newTag = $('<li></li>');
+    var newTag = $(this.newTagHtml);
     //TODO Sanitize html
-    newTag.addClass('tag');
-    newTag.attr('title', 'Click to remove tag');
     newTag.attr('value', tagViewModel.tagText);
     newTag.css('background-color', tagViewModel.tagColor);
-    newTag.data('view-model', tagViewModel);
+    newTag.data('tag-view-model', tagViewModel);
     newTag.text(tagViewModel.tagText);
     newTag.on('click', () => {
       this.removeTag(tagViewModel);
-      this.triggerTagRemoveEvent(tagViewModel);
+      var reviewItemViewModel = this.getCurrentReviewItemViewModel();
+      this.eventTagRemoved.emit(reviewItemViewModel);
     });
 
     this.tagListElem.find('li.tag-ui-add-btn').before(newTag);
@@ -950,11 +891,29 @@ class DefinitionTaggerView extends BaseTaggerView {
 
   getCurrentTags() {
     var currentTags = this.tagListElem.find('.tag')
-      .map((i, tagElem) => $(tagElem).data('view-model'));
+      .map((i, tagElem) => $(tagElem).data('tag-view-model'));
     return Array.from(currentTags);
   }
 
-  getCurrentWkItem() {
+  getCurrentReviewItemViewModel() {
+    var wkItemData = this.getCurrentWkItemData();
+    var tags = this.getCurrentTags();
+
+    var reviewItemViewModel = new ReviewItemViewModel();
+    reviewItemViewModel.itemName = wkItemData.itemName;
+    reviewItemViewModel.itemType = wkItemData.itemType;
+    reviewItemViewModel.tags = tags;
+
+    return reviewItemViewModel;
+  }
+
+  getCurrentTags() {
+    var currentTags = this.tagListElem.find('.tag')
+      .map((i, tagElem) => $(tagElem).data('tag-view-model'));
+    return Array.from(currentTags);
+  }
+
+  getCurrentWkItemData() {
     // Fetches item data off the current page
     // Gathers data from page
     var url = new URL(window.location.href);
@@ -962,12 +921,45 @@ class DefinitionTaggerView extends BaseTaggerView {
     var itemType = mapUrlItemTypeToItemType(pageUrlPathParts[1]);
     var itemName = decodeURIComponent(pageUrlPathParts[2]);
 
-    var wkItemData = new WanikaniItemModel();
+    var wkItemData = new WanikaniItemDataModel();
 
     wkItemData.itemName = itemName;
     wkItemData.itemType = itemType;
 
     return wkItemData;
+  }
+
+  bindTagAdded(handler) {
+    this.eventTagAdded.addEventListener(handler);
+  }
+
+  bindTagRemoved(handler) {
+    this.eventTagRemoved.addEventListener(handler);
+  }
+
+  bindReviewItemChanged(handler) {
+    this.eventTagReviewItemChanged.addEventListener(handler);
+  }
+}
+
+//===================================================
+//Event Emitter
+//C# style-ish event object
+
+class EventEmitter {
+  listeners = [];
+
+  constructor() {
+  }
+
+  addEventListener(handler) {
+    this.listeners.push(handler);
+  }
+
+  emit(eventData) {
+    this.listeners.forEach(handler => {
+      handler(eventData);
+    });
   }
 }
 
@@ -976,10 +968,10 @@ class DefinitionTaggerView extends BaseTaggerView {
 //Uses pickr
 //https://github.com/Simonwep/pickr
 
-class TagColorPickerView{
+class TagColorPickerView {
   colorPicker;
 
-  constructor(replaceElementSelector){
+  constructor(replaceElementSelector) {
     const defaultSwatch = [
       '#F15A5A',
       '#F0C419',
@@ -1010,8 +1002,8 @@ class TagColorPickerView{
       }
     });
   }
-  
-  getSelectedColor(){
+
+  getSelectedColor() {
     return this.colorPicker.getSelectedColor().toHEXA().toString();
   }
 }
@@ -1046,59 +1038,48 @@ function mapUrlItemTypeToItemType(urlItemType) {
 }
 
 //===================================================
-//WaniKani data object
+//View/Domain models
 
 /**
  * An object model of the Wanikani item
  * Contains only data that can be extracted from WaniKani
  */
-class WanikaniItemModel {
+class WanikaniItemDataModel {
   itemName = '';
   itemType = '';
 }
 
-
-//===================================================
-//Tagger Item View Model
+class ReviewItemStatisticsViewModel {
+  taggedItemCount = 0;
+  totalTagCount = 0;
+}
 
 /**
  * Represents data for 1 tag
  * Contains information on how to display the tag on the UI
  */
-class TaggerItemViewModel {
+class TagViewModel {
+  tagId = 0;
   tagText = '';
   tagColor = '';     //Hexadecimal color
 }
 
-//===================================================
-//Tagger Item DTO
-
-/**
- * Represents a data transfer object (DTO). It contains 
- * the relevant WaniKani item data required
- * for the tagger's main functions
- */
-class TaggedItemDTO {
-
-  //Wanikani app official fields
+class ReviewItemViewModel {
   itemType = '';
   itemName = '';
 
-  //Item Tagger fields
-  tags = [];    //a list of type TaggerItemViewModel
-
-  constructor() {
-  }
+  tags = [];    //List of TagViewModel
 }
 
+
 /**
- * Factory function that converts a wanikani item data object from local storage
- * and maps it to the DTO object WanikaniItem.
- * @param {WanikaniItemModel} wkItemModel A wanikani item data object representing the wanikani item on the page
- * @param {Array} currentTags (optional) An array/list of current user defined tags associated with the item, otherwise it is an empty list by default
+ * Mapping function that converts a wanikani item data object
+ * and maps it to the review item view model
+ * @param {WanikaniItemDataModel} wkItemModel A wanikani item data object representing the wanikani item on the page
+ * @param {Array<TagViewModel>} currentTags (optional) An array/list of current user defined tags associated with the item, otherwise it is an empty list by default
  */
 function mapToTaggerItem(wkItemModel, currentTags) {
-  var taggerItem = new TaggedItemDTO();
+  var taggerItem = new ReviewItemDTO();
 
   //Current tags is null, default to empty list
   if (currentTags == null) { currentTags = []; }
@@ -1111,37 +1092,149 @@ function mapToTaggerItem(wkItemModel, currentTags) {
   return taggerItem;
 }
 
+
 //===================================================
-//Tag managment
+//Database models
+
+class ReviewItemDTO {
+  itemType = '';
+  itemName = '';
+
+  tagIds = [];    //a list of tag ids (integers)
+}
+
+class TagDTO {
+  tagId = 0;
+  tagText = '';
+  tagColor = '';
+}
+
+function mapReviewItemViewModelToDTO(reviewItemViewModel) {
+  var reviewItemDto = new ReviewItemDTO();
+  reviewItemDto.itemType = reviewItemViewModel.itemType;
+  reviewItemDto.itemName = reviewItemViewModel.itemName;
+  reviewItemDto.tagIds = reviewItemViewModel.tags.map(tag => {
+    return tag.tagId;
+  });
+
+  return reviewItemDto;
+}
+
+function mapReviewItemDTOToViewModel(reviewItemDto) {
+  var reviewItemViewModel = new ReviewItemViewModel();
+  reviewItemViewModel.itemType = reviewItemDto.itemType;
+  reviewItemViewModel.itemName = reviewItemDto.itemName;
+  reviewItemViewModel.tags = [];
+
+  return reviewItemViewModel;
+}
 
 /**
- * Manages tag data, transforming it to something
- * that can be saved for later
+ * Converts tag view model to Database model
+ * @param {TagViewModel} tagViewModel 
+ * @return {TagDTO}
  */
-class TagService {
+function mapTagViewModelToDTO(tagViewModel) {
+  var tagDto = new TagDTO();
+  tagDto.tagId = tagViewModel.tagId;
+  tagDto.tagText = tagViewModel.tagText;
+  tagDto.tagColor = tagViewModel.tagColor;
+
+  return tagDto;
+}
+
+/**
+ * Converts tag database model to view model
+ * @param {TagViewModel} tagViewModel 
+ * @return {TagDTO}
+ */
+function mapTagDTOToViewModel(tagDto) {
+  var tagViewModel = new TagViewModel();
+  tagViewModel.tagId = tagDto.tagId;
+  tagViewModel.tagText = tagDto.tagText;
+  tagViewModel.tagColor = tagDto.tagColor;
+
+  return tagViewModel;
+}
+
+//===================================================
+//Tag service
+
+/**
+ * Manages review item and tag data
+ */
+class ReviewItemService {
+  reviewItemRepository;
   tagRepository;
 
-  constructor(tagRepository) {
+  constructor(reviewItemRepository, tagRepository) {
+    this.reviewItemRepository = reviewItemRepository;
     this.tagRepository = tagRepository;
   }
 
-  async updateItemTags(tagItemDto) {
-    console.debug(tagItemDto);
-    await this.tagRepository.saveTag(tagItemDto);
+  async putReviewItem(reviewItemViewModel) {
+    var reviewItemDto = mapReviewItemViewModelToDTO(reviewItemViewModel);
+    var tagDtos = reviewItemViewModel.tags.map(tagViewModel => mapTagViewModelToDTO(tagViewModel));
+
+    var putTagTasks = [];
+    tagDtos.forEach(tagDto => {
+      putTagTasks.push(this.tagRepository.putTag(tagDto));
+    });
+
+    await Promise.all(putTagTasks);
+    await this.reviewItemRepository.putReviewItem(reviewItemDto);
   }
 
-  async getItemTags(itemType, itemName) {
-    return await this.tagRepository.getTags(itemType, itemName);
+  async updateReviewItem(reviewItemViewModel) {
+    //Update/add all tags
+    var tagDtos = reviewItemViewModel.tags.map(tag => {
+      return mapTagViewModelToDTO(tag);
+    });
+
+    var updateTasks = tagDtos.map(tagDto => {
+      //TODO, need to lookup if tag exists, if so then we dont need to update
+      if (tagDto.tagId <= 0) {
+        return this.tagRepository.putTag(tagDto);
+      }
+      return this.tagRepository.updateTag(tagDto);
+    });
+
+    await Promise.all(updateTasks);
+
+    //Update review item
+    var reviewItemDto = mapReviewItemViewModelToDTO(reviewItemViewModel);
+    reviewItemDto.tagIds = Array.from(new Set(tagDtos.map(tagDto => tagDto.tagId)));
+
+    await this.reviewItemRepository.updateReviewItem(reviewItemDto);
+  }
+
+  async getReviewItem(itemType, itemName) {
+    var reviewItemDto = await this.reviewItemRepository.getReviewItem(itemType, itemName);
+    if (reviewItemDto == null) {
+      return null;
+    }
+
+    var reviewItemViewModel = mapReviewItemDTOToViewModel(reviewItemDto);
+    // Get tags if any
+    if (reviewItemDto.tagIds.length >= 1) {
+      var tagViewModelGetTasks = reviewItemDto.tagIds.map(tagId => {
+        return this.tagRepository.getTag(tagId);
+      });
+
+      var tags = await Promise.all(tagViewModelGetTasks);
+      reviewItemViewModel.tags = tags;
+    }
+
+    return reviewItemViewModel;
   }
 
   async getUserStats() {
-    var allTaggedItems = await this.tagRepository.getAllTaggedItems();
+    var allTaggedItems = await this.reviewItemRepository.getAllReviewItems();
     var allTags = [].concat.apply([], allTaggedItems.map(item => item.tags));
 
-    var statsModel = {
-      TaggedItemCount: allTaggedItems.filter(item => item.tags.length > 0).length,
-      TotalTagCount: allTags.length,
-    };
+    var statsModel = new ReviewItemStatisticsViewModel();
+    statsModel.taggedItemCount = allTaggedItems.filter(item => item.tags.length > 0).length;
+    statsModel.totalTagCount = allTags.length;
 
     return statsModel;
   }
@@ -1149,51 +1242,97 @@ class TagService {
 
 
 //===================================================
-//Tag storage repository
+//Repositories
 
-/**
- * Manages raw tag data, storing and reading raw data
- */
-class TagRepository {
-  tagDataStoreKey = "tag-data";
+class ReviewItemRepository {
+  reviewItemsNamespace = "review-items";
   dataContext;
 
   constructor(dataContext) {
     this.dataContext = dataContext;
   }
 
-  async saveTag(tagItemDto) {
-    var key = this.generateStoreKeyFromDto(tagItemDto);
-    return await this.dataContext.writeData(key, tagItemDto);
+  async updateReviewItem(reviewItemDto) {
+    var key = this.generateId(reviewItemDto.itemType, reviewItemDto.itemName);
+    var reviewItem = await this.dataContext.get(key);
+
+    if (reviewItem == null) {
+      throw new Error(`Review Item update failed, tag does not exist. Tag=${reviewItem}`);
+    }
+
+    await this.dataContext.put(key, reviewItemDto);
   }
 
-  async getTags(itemType, itemName) {
-    var key = this.generateStoreKey(itemType, itemName);
-    var itemData = await this.dataContext.readData(key);
-    return itemData == null ? [] : itemData.tags;
+  async putReviewItem(reviewItemDto) {
+    var key = this.generateId(reviewItemDto.itemType, reviewItemDto.itemName);
+
+    var reviewItem = await this.dataContext.get(key);
+    if (reviewItem != null) {
+      throw new Error(`Review Item put failed, tag already exists. Tag=${reviewItem}`);
+    }
+
+    await this.dataContext.put(key, reviewItemDto);
   }
 
-  generateStoreKey(itemType, itemName) {
-    return `${this.tagDataStoreKey}/${itemType.toLowerCase()}/${itemName}`;
+  async getReviewItem(reviewItemType, reviewItemId) {
+    var key = this.generateId(reviewItemType, reviewItemId);
+    return await this.dataContext.get(key);
   }
 
-  generateStoreKeyFromDto(tagItemDto) {
-    return this.generateStoreKey(tagItemDto.itemType, tagItemDto.itemName);
+  async getAllReviewItems() {
+    var allItems = await this.dataContext.getAllValues((key) => key.indexOf(this.reviewItemsNamespace) == 0);
+    return allItems;
   }
 
-  async getAllTaggedItems() {
-    var allItemKeys = await this.dataContext.getAllItemKeys();
-    var allItems = [];
+  generateId(itemType, itemName) {
+    return `${this.reviewItemsNamespace}/${itemType}/${itemName}`;
+  }
+}
 
-    allItemKeys.forEach(itemKey => {
-      // Get only tagged item related data
-      if (itemKey.indexOf(this.tagDataStoreKey) == 0) {
-        var itemData = this.dataContext.readData(itemKey);
-        allItems.push(itemData);
-      }
-    });
+class TagRepository {
+  tagNamespace = "tags";
+  dataContext;
 
-    return await Promise.all(allItems);
+  constructor(dataContext) {
+    this.dataContext = dataContext;
+  }
+
+  async updateTag(tagDto) {
+    var key = this.generateId(tagDto.tagId);
+    var tag = await this.dataContext.get(key);
+
+    if (tag == null) {
+      throw new Error(`Tag update failed, tag does not exist. Tag=${tagDto}`);
+    }
+
+    await this.dataContext.put(key, tagDto);
+  }
+
+  async putTag(tagDto) {
+    var tagId = (new Date()).getTime();
+    var key = this.generateId(tagId);
+
+    var tag = await this.dataContext.get(key);
+    if (tag != null) {
+      throw new Error(`Tag put failed, tag already exists. Tag=${tag}`);
+    }
+
+    tagDto.tagId = tagId;
+    await this.dataContext.put(key, tagDto);
+  }
+
+  async getTag(tagId) {
+    var key = this.generateId(tagId);
+    return await this.dataContext.get(key);
+  }
+
+  async getAllTags() {
+    var allTags = await this.dataContext.getAllValues((key) => key.indexOf(this.reviewItemsNamespace) == 0);
+    return allTags;
+  }
+
+  generateId(tagId) {
+    return `${this.tagNamespace}/${tagId}`;
   }
 }
 
@@ -1215,7 +1354,7 @@ class TamperMonkeyUserDataContext {
    * @param {*} value Value
    * @returns Promise with no value on success, no value for rejected
    */
-  writeData(key, value) {
+  put(key, value) {
     if (key == null || key == '') {
       throw new Error(`Cannot save with null key. Value=${value}`);
     }
@@ -1227,16 +1366,42 @@ class TamperMonkeyUserDataContext {
    * @param {*} key Key to fetch
    * @returns Promise
    */
-  readData(key) {
+  get(key) {
     return GM.getValue(key);
   }
 
   /**
-   * Gets all items
+   * Gets all keys
    * @returns Promise
    */
-  getAllItemKeys() {
+  getAllKeys() {
     return GM.listValues();
+  }
+
+  /**
+   * Gets all values.
+   * Optional: provide a key filtering function
+   * Otherwise retrieves all values in database
+   * @param {Func<string,bool>} keyFilter (Optional) Lambda with param for key and returns bool
+   */
+  getAllValues(keyFilter) {
+    //No filter, return all items
+    if (filterFunct == null) {
+      filterFunc = (() => true);
+    }
+
+    return new Promise(async (resolve, reject) => {
+      var getAllKeys = await this.getAllKeys();
+
+      var filteredKeys = getAllKeys.filter(filterFunc);
+      var getValueTasks = [];
+      filteredKeys.forEach(key => {
+        getValueTasks.push(this.get(key));
+      });
+
+      var filteredValues = await Promise.all(getValueTasks);
+      resolve(filteredValues);
+    });
   }
 }
 
