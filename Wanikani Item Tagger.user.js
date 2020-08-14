@@ -1222,7 +1222,6 @@ class ReviewItemService {
   }
 
   async addTagToReviewItem(reviewItemViewModel, tagViewModel) {
-    var currentTagDtos = reviewItemViewModel.tags.map(tag => mapTagViewModelToDTO(tag));
     var tagToAddDto = mapTagViewModelToDTO(tagViewModel);
 
     // Add new tag to database if it does not exist already
