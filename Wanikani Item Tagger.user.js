@@ -293,7 +293,7 @@ class TaggerController {
     if (existingReviewItemViewModel == null) {
       existingReviewItemViewModel = await this.reviewItemService.createNewReviewItem(itemType, itemName);
     }
-    
+
     this.tagView.loadReviewItem(existingReviewItemViewModel);
   }
 
@@ -305,7 +305,9 @@ class TaggerController {
   }
 
   removeTag(reviewItemViewModel, removedTagViewModel) {
-
+    this.reviewItemService.removeTagFromReviewItem(reviewItemViewModel, removedTagViewModel).then((updatedReviewItemViewModel) => {
+      this.tagView.loadReviewItem(updatedReviewItemViewModel);
+    });
   }
 }
 
@@ -886,7 +888,7 @@ class DefinitionTaggerView extends BaseTaggerView {
     newTag.on('click', () => {
       this.removeTag(tagViewModel);
       var reviewItemViewModel = this.getCurrentReviewItemViewModel();
-      this.eventTagRemoved.emit(reviewItemViewModel);
+      this.eventTagRemoved.emit(reviewItemViewModel, tagViewModel);
     });
 
     this.tagListElem.find('li.tag-ui-add-btn').before(newTag);
@@ -1231,7 +1233,6 @@ class ReviewItemService {
     }
 
     var reviewItemDto = mapReviewItemViewModelToDTO(reviewItemViewModel);
-    reviewItemDto.tagIds = currentTagDtos.map(tagDto => tagDto.tagId);
     reviewItemDto.tagIds.push(existingTagDto.tagId);
 
     await this.reviewItemRepository.updateReviewItem(reviewItemDto);
@@ -1239,6 +1240,15 @@ class ReviewItemService {
     //Update review model and return
     var existingTagViewModel = mapTagDTOToViewModel(existingTagDto);
     reviewItemViewModel.tags.push(existingTagViewModel);
+    return reviewItemViewModel;
+  }
+
+  async removeTagFromReviewItem(reviewItemViewModel, tagViewModel) {
+    reviewItemViewModel.tags = reviewItemViewModel.tags.filter(tag => tag.tagText != tagViewModel.tagText);
+
+    var reviewItemDto = mapReviewItemViewModelToDTO(reviewItemViewModel);
+    await this.reviewItemRepository.updateReviewItem(reviewItemDto);
+
     return reviewItemViewModel;
   }
 
@@ -1394,7 +1404,7 @@ class TagRepository {
       .getAllValues((key) => key.indexOf(this.tagNamespace) == 0)
     var tagSearchResults = allTags
       .filter((tagDto) => tagDto.tagText == tagText);
-    
+
     if (tagSearchResults == null || tagSearchResults.length == 0) {
       return null;
     }
