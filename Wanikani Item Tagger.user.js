@@ -264,11 +264,11 @@ class TaggerController {
     this.tagView = tagView;
 
     //Listen to tag add or remove events, save updated tags
-    this.tagView.bindTagAdded((reviewItemViewModel) => {
-      this.saveReviewItem(reviewItemViewModel);
+    this.tagView.bindTagAdded((reviewItemViewModel, addedTagViewModel) => {
+      this.addTag(reviewItemViewModel, addedTagViewModel);
     });
-    this.tagView.bindTagRemoved((reviewItemViewModel) => {
-      this.saveReviewItem(reviewItemViewModel);
+    this.tagView.bindTagRemoved((reviewItemViewModel, addedTagViewModel) => {
+      this.removeTag(reviewItemViewModel, addedTagViewModel);
     });
 
     //Item changed event handler
@@ -284,21 +284,28 @@ class TaggerController {
     this.loadTags();
   }
 
-  loadTags() {
+  async loadTags() {
     var currentItem = this.tagView.getCurrentWkItemData();
-    this.reviewItemService.getReviewItem(currentItem.itemType, currentItem.itemName).then((reviewItemViewModel) => {
-      if (reviewItemViewModel == null) {
-        reviewItemViewModel = new ReviewItemViewModel();
-        reviewItemViewModel.itemName = currentItem.itemName;
-        reviewItemViewModel.itemType = currentItem.itemType;
-        this.reviewItemService.putReviewItem(reviewItemViewModel);
-      }
-      this.tagView.loadReviewItem(reviewItemViewModel);
+    var itemName = currentItem.itemName;
+    var itemType = currentItem.itemType;
+
+    var existingReviewItemViewModel = await this.reviewItemService.getReviewItem(itemType, itemName);
+    if (existingReviewItemViewModel == null) {
+      existingReviewItemViewModel = await this.reviewItemService.createNewReviewItem(itemType, itemName);
+    }
+    
+    this.tagView.loadReviewItem(existingReviewItemViewModel);
+  }
+
+  addTag(reviewItemViewModel, addedTagViewModel) {
+    //TODO Sanitize html
+    this.reviewItemService.addTagToReviewItem(reviewItemViewModel, addedTagViewModel).then((updatedReviewItemViewModel) => {
+      this.tagView.loadReviewItem(updatedReviewItemViewModel);
     });
   }
 
-  saveReviewItem(reviewItemViewModel) {
-    this.reviewItemService.updateReviewItem(reviewItemViewModel);
+  removeTag(reviewItemViewModel, removedTagViewModel) {
+
   }
 }
 
@@ -792,6 +799,7 @@ class DefinitionTaggerView extends BaseTaggerView {
   rootElement;
   tagListElem;
   colorPicker;
+  reviewItemViewModel;
 
   eventTagAdded = new EventEmitter();
   eventTagRemoved = new EventEmitter();
@@ -840,11 +848,9 @@ class DefinitionTaggerView extends BaseTaggerView {
       newItemModel.tagText = newTagText;
       newItemModel.tagColor = this.colorPicker.getSelectedColor();
 
-      this.addTag(newItemModel);
-
       //Trigger event callbacks
       var reviewItemViewModel = this.getCurrentReviewItemViewModel();
-      this.eventTagAdded.emit(reviewItemViewModel);
+      this.eventTagAdded.emit(reviewItemViewModel, newItemModel);
     };
 
     //Enter button used to submit
@@ -862,6 +868,8 @@ class DefinitionTaggerView extends BaseTaggerView {
   }
 
   loadReviewItem(reviewItemViewModel) {
+    this.reviewItemViewModel = reviewItemViewModel;
+
     this.tagListElem.find('.tag').remove();
 
     reviewItemViewModel.tags.forEach(tagViewModel => {
@@ -871,7 +879,6 @@ class DefinitionTaggerView extends BaseTaggerView {
 
   addTag(tagViewModel) {
     var newTag = $(this.newTagHtml);
-    //TODO Sanitize html
     newTag.attr('value', tagViewModel.tagText);
     newTag.css('background-color', tagViewModel.tagColor);
     newTag.data('tag-view-model', tagViewModel);
@@ -896,15 +903,10 @@ class DefinitionTaggerView extends BaseTaggerView {
   }
 
   getCurrentReviewItemViewModel() {
-    var wkItemData = this.getCurrentWkItemData();
     var tags = this.getCurrentTags();
+    this.reviewItemViewModel.tags = tags;
 
-    var reviewItemViewModel = new ReviewItemViewModel();
-    reviewItemViewModel.itemName = wkItemData.itemName;
-    reviewItemViewModel.itemType = wkItemData.itemType;
-    reviewItemViewModel.tags = tags;
-
-    return reviewItemViewModel;
+    return this.reviewItemViewModel;
   }
 
   getCurrentTags() {
@@ -959,6 +961,12 @@ class EventEmitter {
   emit(eventData) {
     this.listeners.forEach(handler => {
       handler(eventData);
+    });
+  }
+
+  emit(eventData1, eventData2) {
+    this.listeners.forEach(handler => {
+      handler(eventData1, eventData2);
     });
   }
 }
@@ -1065,6 +1073,7 @@ class TagViewModel {
 }
 
 class ReviewItemViewModel {
+  itemId = '';
   itemType = '';
   itemName = '';
 
@@ -1097,6 +1106,7 @@ function mapToTaggerItem(wkItemModel, currentTags) {
 //Database models
 
 class ReviewItemDTO {
+  itemId = '';
   itemType = '';
   itemName = '';
 
@@ -1111,6 +1121,7 @@ class TagDTO {
 
 function mapReviewItemViewModelToDTO(reviewItemViewModel) {
   var reviewItemDto = new ReviewItemDTO();
+  reviewItemDto.itemId = reviewItemViewModel.itemId;
   reviewItemDto.itemType = reviewItemViewModel.itemType;
   reviewItemDto.itemName = reviewItemViewModel.itemName;
   reviewItemDto.tagIds = reviewItemViewModel.tags.map(tag => {
@@ -1122,6 +1133,7 @@ function mapReviewItemViewModelToDTO(reviewItemViewModel) {
 
 function mapReviewItemDTOToViewModel(reviewItemDto) {
   var reviewItemViewModel = new ReviewItemViewModel();
+  reviewItemViewModel.itemId = reviewItemDto.itemId;
   reviewItemViewModel.itemType = reviewItemDto.itemType;
   reviewItemViewModel.itemName = reviewItemDto.itemName;
   reviewItemViewModel.tags = [];
@@ -1182,30 +1194,52 @@ class ReviewItemService {
     });
 
     await Promise.all(putTagTasks);
-    await this.reviewItemRepository.putReviewItem(reviewItemDto);
+
+    var updatedReviewItem = await this.reviewItemRepository.putReviewItem(reviewItemDto);
+    reviewItemViewModel.itemId = updatedReviewItem.itemId;
+
+    return reviewItemViewModel;
   }
 
-  async updateReviewItem(reviewItemViewModel) {
-    //Update/add all tags
-    var tagDtos = reviewItemViewModel.tags.map(tag => {
-      return mapTagViewModelToDTO(tag);
-    });
+  /**
+   * Creates a new review item and saves it
+   * @param {string} itemType 
+   * @param {string} itemName 
+   */
+  async createNewReviewItem(itemType, itemName) {
+    // Does not exist create and save
+    var newReviewItemDto = new ReviewItemDTO();
+    newReviewItemDto.itemType = itemType;
+    newReviewItemDto.itemName = itemName;
+    newReviewItemDto.tagIds = [];
 
-    var updateTasks = tagDtos.map(tagDto => {
-      //TODO, need to lookup if tag exists, if so then we dont need to update
-      if (tagDto.tagId <= 0) {
-        return this.tagRepository.putTag(tagDto);
-      }
-      return this.tagRepository.updateTag(tagDto);
-    });
+    var newlyPutReviewItemDTO = await this.reviewItemRepository.putReviewItem(newReviewItemDto);
 
-    await Promise.all(updateTasks);
+    var reviewItemViewModel = mapReviewItemDTOToViewModel(newlyPutReviewItemDTO);
+    return reviewItemViewModel;
+  }
 
-    //Update review item
+  async addTagToReviewItem(reviewItemViewModel, tagViewModel) {
+    var currentTagDtos = reviewItemViewModel.tags.map(tag => mapTagViewModelToDTO(tag));
+    var tagToAddDto = mapTagViewModelToDTO(tagViewModel);
+
+    // Add new tag to database if it does not exist already
+    var existingTagDto = await this.tagRepository.getTagByText(tagViewModel.tagText);
+    if (existingTagDto == null) {
+      //Tag does not exist, need to add
+      existingTagDto = await this.tagRepository.putTag(tagToAddDto);
+    }
+
     var reviewItemDto = mapReviewItemViewModelToDTO(reviewItemViewModel);
-    reviewItemDto.tagIds = Array.from(new Set(tagDtos.map(tagDto => tagDto.tagId)));
+    reviewItemDto.tagIds = currentTagDtos.map(tagDto => tagDto.tagId);
+    reviewItemDto.tagIds.push(existingTagDto.tagId);
 
     await this.reviewItemRepository.updateReviewItem(reviewItemDto);
+
+    //Update review model and return
+    var existingTagViewModel = mapTagDTOToViewModel(existingTagDto);
+    reviewItemViewModel.tags.push(existingTagViewModel);
+    return reviewItemViewModel;
   }
 
   async getReviewItem(itemType, itemName) {
@@ -1253,29 +1287,41 @@ class ReviewItemRepository {
   }
 
   async updateReviewItem(reviewItemDto) {
-    var key = this.generateId(reviewItemDto.itemType, reviewItemDto.itemName);
+    if (this.isNullOrEmpty(reviewItemDto.itemId)) {
+      throw new Error(`Review Item update failed, review item id is null. Review Item=${reviewItem}`);
+    }
+
+    var key = this.generateStorageKey(reviewItemDto.itemId);
     var reviewItem = await this.dataContext.get(key);
 
     if (reviewItem == null) {
-      throw new Error(`Review Item update failed, tag does not exist. Tag=${reviewItem}`);
+      throw new Error(`Review Item update failed, review item does not exist. Review Item=${reviewItem}`);
     }
 
     await this.dataContext.put(key, reviewItemDto);
   }
 
   async putReviewItem(reviewItemDto) {
-    var key = this.generateId(reviewItemDto.itemType, reviewItemDto.itemName);
+    if (!this.isNullOrEmpty(reviewItemDto.itemId)) {
+      throw new Error(`Review Item put failed, item id must be null to insert object. Review Item=${reviewItem}`);
+    }
+
+    var reviewItemId = this.generateReviewItemId(reviewItemDto.itemType, reviewItemDto.itemName);
+    var key = this.generateStorageKey(reviewItemId);
 
     var reviewItem = await this.dataContext.get(key);
     if (reviewItem != null) {
-      throw new Error(`Review Item put failed, tag already exists. Tag=${reviewItem}`);
+      throw new Error(`Review Item put failed, review item already exists. Review Item=${reviewItem}`);
     }
 
+    reviewItemDto.itemId = reviewItemId;
     await this.dataContext.put(key, reviewItemDto);
+    return reviewItemDto;
   }
 
-  async getReviewItem(reviewItemType, reviewItemId) {
-    var key = this.generateId(reviewItemType, reviewItemId);
+  async getReviewItem(reviewItemType, reviewItemName) {
+    var reviewItemId = this.generateReviewItemId(reviewItemType, reviewItemName);
+    var key = this.generateStorageKey(reviewItemId);
     return await this.dataContext.get(key);
   }
 
@@ -1284,8 +1330,16 @@ class ReviewItemRepository {
     return allItems;
   }
 
-  generateId(itemType, itemName) {
-    return `${this.reviewItemsNamespace}/${itemType}/${itemName}`;
+  generateReviewItemId(reviewItemType, reviewItemName) {
+    return `${reviewItemType}/${reviewItemName}`;
+  }
+
+  generateStorageKey(reviewItemId) {
+    return `${this.reviewItemsNamespace}/${reviewItemId}`;
+  }
+
+  isNullOrEmpty(str) {
+    return (!str || 0 === str.length);
   }
 }
 
@@ -1298,7 +1352,11 @@ class TagRepository {
   }
 
   async updateTag(tagDto) {
-    var key = this.generateId(tagDto.tagId);
+    if (this.isNullTagId(tagDto.tagId)) {
+      throw new Error(`Tag update failed, tag id is null. Tag=${tagDto}`);
+    }
+
+    var key = this.generateStorageKey(tagDto.tagId);
     var tag = await this.dataContext.get(key);
 
     if (tag == null) {
@@ -1309,8 +1367,12 @@ class TagRepository {
   }
 
   async putTag(tagDto) {
+    if (!this.isNullTagId(tagDto.tagId)) {
+      throw new Error(`Tag put failed, tag id must not be specified. Tag=${tagDto}`);
+    }
+
     var tagId = (new Date()).getTime();
-    var key = this.generateId(tagId);
+    var key = this.generateStorageKey(tagId);
 
     var tag = await this.dataContext.get(key);
     if (tag != null) {
@@ -1319,11 +1381,29 @@ class TagRepository {
 
     tagDto.tagId = tagId;
     await this.dataContext.put(key, tagDto);
+    return tagDto;
   }
 
   async getTag(tagId) {
-    var key = this.generateId(tagId);
+    var key = this.generateStorageKey(tagId);
     return await this.dataContext.get(key);
+  }
+
+  async getTagByText(tagText) {
+    var allTags = await this.dataContext
+      .getAllValues((key) => key.indexOf(this.tagNamespace) == 0)
+    var tagSearchResults = allTags
+      .filter((tagDto) => tagDto.tagText == tagText);
+    
+    if (tagSearchResults == null || tagSearchResults.length == 0) {
+      return null;
+    }
+
+    if (tagSearchResults.length > 1) {
+      console.warn(`Warning: multiple tag entities exist with tagText=${tagText}`);
+    }
+
+    return tagSearchResults[0];
   }
 
   async getAllTags() {
@@ -1331,8 +1411,12 @@ class TagRepository {
     return allTags;
   }
 
-  generateId(tagId) {
+  generateStorageKey(tagId) {
     return `${this.tagNamespace}/${tagId}`;
+  }
+
+  isNullTagId(tagId) {
+    return tagId == null || tagId <= 0;
   }
 }
 
@@ -1386,14 +1470,14 @@ class TamperMonkeyUserDataContext {
    */
   getAllValues(keyFilter) {
     //No filter, return all items
-    if (filterFunct == null) {
-      filterFunc = (() => true);
+    if (keyFilter == null) {
+      keyFilter = (() => true);
     }
 
     return new Promise(async (resolve, reject) => {
       var getAllKeys = await this.getAllKeys();
 
-      var filteredKeys = getAllKeys.filter(filterFunc);
+      var filteredKeys = getAllKeys.filter(keyFilter);
       var getValueTasks = [];
       filteredKeys.forEach(key => {
         getValueTasks.push(this.get(key));
@@ -1404,7 +1488,6 @@ class TamperMonkeyUserDataContext {
     });
   }
 }
-
 
 //===================================================
 initialize();
