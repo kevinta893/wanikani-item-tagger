@@ -1,0 +1,28 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"editor.tabSize": 2
+	},
+	"tasks": {
+		"version": "2.0.0",
+		"tasks": [
+			{
+				"type": "gulp",
+				"task": "build",
+				"group": "build",
+				"problemMatcher": [],
+				"label": "gulp: build"
+			},
+			{
+				"type": "gulp",
+				"task": "clean",
+				"problemMatcher": [],
+				"label": "gulp: clean"
+			}
+		]
+	}
+}
