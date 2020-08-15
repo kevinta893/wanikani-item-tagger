@@ -8,8 +8,8 @@ class ReviewItemService {
   }
 
   async putReviewItem(reviewItemViewModel) {
-    var reviewItemDto = mapReviewItemViewModelToDTO(reviewItemViewModel);
-    var tagDtos = reviewItemViewModel.tags.map(tagViewModel => mapTagViewModelToDTO(tagViewModel));
+    var reviewItemDto = ReviewItemModelMapper.mapViewModelToDTO(reviewItemViewModel);
+    var tagDtos = reviewItemViewModel.tags.map(tagViewModel => TagModelMapper.mapViewModelToDTO(tagViewModel));
 
     var putTagTasks = [];
     tagDtos.forEach(tagDto => {
@@ -38,27 +38,26 @@ class ReviewItemService {
 
     var newlyPutReviewItemDTO = await this.reviewItemRepository.putReviewItem(newReviewItemDto);
 
-    var reviewItemViewModel = mapReviewItemDTOToViewModel(newlyPutReviewItemDTO);
+    var reviewItemViewModel = ReviewItemModelMapper.mapDTOToViewModel(newlyPutReviewItemDTO);
     return reviewItemViewModel;
   }
 
   async addTagToReviewItem(reviewItemViewModel, tagViewModel) {
-    var tagToAddDto = mapTagViewModelToDTO(tagViewModel);
-
     // Add new tag to database if it does not exist already
     var existingTagDto = await this.tagRepository.getTagByText(tagViewModel.tagText);
     if (existingTagDto == null) {
       //Tag does not exist, need to add
+      var tagToAddDto = TagModelMapper.mapViewModelToDTO(tagViewModel);
       existingTagDto = await this.tagRepository.putTag(tagToAddDto);
     }
 
-    var reviewItemDto = mapReviewItemViewModelToDTO(reviewItemViewModel);
+    var reviewItemDto = ReviewItemModelMapper.mapViewModelToDTO(reviewItemViewModel);
     reviewItemDto.tagIds.push(existingTagDto.tagId);
 
     await this.reviewItemRepository.updateReviewItem(reviewItemDto);
 
     //Update review model and return
-    var existingTagViewModel = mapTagDTOToViewModel(existingTagDto);
+    var existingTagViewModel = TagModelMapper.mapDTOToViewModel(existingTagDto);
     reviewItemViewModel.tags.push(existingTagViewModel);
     return reviewItemViewModel;
   }
@@ -66,7 +65,7 @@ class ReviewItemService {
   async removeTagFromReviewItem(reviewItemViewModel, tagViewModel) {
     reviewItemViewModel.tags = reviewItemViewModel.tags.filter(tag => tag.tagText != tagViewModel.tagText);
 
-    var reviewItemDto = mapReviewItemViewModelToDTO(reviewItemViewModel);
+    var reviewItemDto = ReviewItemModelMapper.mapViewModelToDTO(reviewItemViewModel);
     await this.reviewItemRepository.updateReviewItem(reviewItemDto);
 
     return reviewItemViewModel;
@@ -78,7 +77,7 @@ class ReviewItemService {
       return null;
     }
 
-    var reviewItemViewModel = mapReviewItemDTOToViewModel(reviewItemDto);
+    var reviewItemViewModel = ReviewItemModelMapper.mapDTOToViewModel(reviewItemDto);
     // Get tags if any
     if (reviewItemDto.tagIds.length >= 1) {
       var tagViewModelGetTasks = reviewItemDto.tagIds.map(tagId => {

@@ -3,5 +3,5 @@ class ReviewItemDTO {
   itemType = '';
   itemName = '';
 
-  tagIds = [];    //a list of tag ids (integers)
+  tagIds = [];    //A list of tag ids
 }
