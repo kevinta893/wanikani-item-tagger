@@ -4,10 +4,13 @@ var footer = require('gulp-footer');
 var del = require('del');
 var fs = require('fs');
 
+// Configuration
 const outputFileName = 'Wanikani Item Tagger.user.js';
+const developBuildFolder = 'output/';
+const releaseFolder = 'dist/';
 
 function clean() {
-  return del('dist/*');
+  return del(`${developBuildFolder}/*`);
 }
 
 function build() {
@@ -19,7 +22,7 @@ function build() {
   ])
     .pipe(concat(outputFileName, { newLine: '\r\n\r\n' }))
     .pipe(footer(userscriptFooter))
-    .pipe(dest('dist/'));
+    .pipe(dest(developBuildFolder));
 }
 
 exports.build = series(clean, build);
