@@ -2,7 +2,7 @@
  * UI for the definition pages on Wanikani
  * For radicals, kanji, and vocabulary pages
  */
-class DefinitionTaggerView{
+class DefinitionTaggerView {
 
   html = `
       <div class="alternative-meaning">
@@ -139,7 +139,7 @@ class DefinitionTaggerView{
 
   addTag(tagViewModel) {
     var newTag = $(this.newTagHtml);
-    newTag.attr('value', tagViewModel.tagText);
+    newTag.attr('data-tag-id', tagViewModel.tagId);
     newTag.css('background-color', tagViewModel.tagColor);
     newTag.data('tag-view-model', tagViewModel);
     newTag.text(tagViewModel.tagText);
@@ -153,7 +153,7 @@ class DefinitionTaggerView{
   }
 
   removeTag(tagViewModel) {
-    this.tagListElem.find(`.tag[value="${tagViewModel.tagText}"]`).get(0).remove();
+    this.tagListElem.find(`.tag[data-tag-id="${tagViewModel.tagId}"]`).get(0).remove();
   }
 
   getCurrentTags() {
