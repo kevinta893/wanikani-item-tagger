@@ -25,6 +25,9 @@
 
 //Loads user script
 function initialize() {
+  // CSS
+  UserscriptCSSLoader.loadUserScriptCss();
+
   // External Styles
   var pickrMonolithCSS = GM_getResourceText("pickr_monolith_style");
   GM_addStyle(pickrMonolithCSS);

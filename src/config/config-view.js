@@ -18,57 +18,6 @@ class TaggerConfigView {
     <div id="tag-ui-modal-background"></div>
   </div>
   `;
-  css = `
-  #tag-ui-config-modal {
-    display: none;
-    position: fixed;
-    z-index: 1;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-  }
-  #tag-ui-modal-background{
-    display: block;
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgb(0,0,0);
-    background-color: rgba(0,0,0,0.4);
-    z-index: -1;
-    cursor: pointer;
-  }
-  #tag-ui-config-modal-content {
-    background-color: #fefefe;
-    margin: 15% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    z-index: 1;
-    width: 80%;
-  }
-  
-  #tag-ui-close-config-btn {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-  }
-  
-  #tag-ui-close-config-btn:hover,
-  #tag-ui-close-config-btn:focus {
-    color: black;
-    text-decoration: none;
-    cursor: pointer;
-  }
-
-  .tag-ui-stat-value{
-    font-weight: bold;
-  }
-  `;
   configModal;
 
   listenersConfigModalOpened = [];
@@ -77,7 +26,6 @@ class TaggerConfigView {
 
   constructor() {
     $('body').append(this.html);
-    GM_addStyle(this.css);
 
     // Get the modal
     var configModal = $('#tag-ui-config-modal');

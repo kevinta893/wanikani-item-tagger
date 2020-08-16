@@ -6,33 +6,6 @@ class SelectableTagView {
       <div class="tag-select-edit-btn">✏️</div>
     </div>
   `;
-  static css = `    
-    .tag-select-option {
-      cursor: pointer;
-      display: inline-block;
-      padding-left: 0.5em;
-      padding-right: 0.5em;
-      margin-right: 0.5em;
-      margin-bottom: 0.5em;
-      color: #eee;
-      -webkit-border-radius: 3px;
-      -moz-border-radius: 3px;
-      border-radius: 3px;
-    }
-    .tag-select-text {
-      display: inline-block;
-    }
-    .tag-select-edit-btn {
-      display: inline-block;
-    }
-    .tag-select-edit-btn:hover{
-    }
-    .tag-selected {
-    }
-    .tag-selectable {
-      filter: opacity(60%);
-    }
-  `;
 
   tagSelectedClass = 'tag-selected';
   tagNotSelectedClass = 'tag-selectable';
@@ -50,8 +23,6 @@ class SelectableTagView {
    * @param {TagViewModel} tagViewModel Tag view model to display
    */
   constructor(el, tagViewModel) {
-    GM_addStyle(this.css);
-
     this.tagId = tagViewModel.tagId;
 
     var rootElement = $(el);

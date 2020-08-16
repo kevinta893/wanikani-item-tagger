@@ -14,11 +14,6 @@ class TagEditorView {
   newPickableTagHtml = `
     <div></div>
   `;
-  css = `
-    #tag-picker-list {
-
-    }
-  `;
 
   tagPickerListElem;
 
@@ -28,9 +23,6 @@ class TagEditorView {
    * @param {object} options Options for this tag editor
    */
   constructor(el, options) {
-    GM_addStyle(this.css);
-    GM_addStyle(SelectableTagView.css);
-
     // Configure the UI for the definition page
     var rootElement = $(el);
     rootElement.replaceWith(this.html);
@@ -56,5 +48,4 @@ class TagEditorView {
     tagPickOption.bindTagSelectChanged(() => { });
     tagPickOption.bindTagEditClicked(() => { });
   }
-
 }

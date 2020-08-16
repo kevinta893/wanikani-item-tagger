@@ -26,41 +26,6 @@ class DefinitionTaggerView {
   newTagHtml = `
       <li class="tag" title="Click to remove tag"></li>
     `;
-  css = `
-      .tag{
-        cursor: pointer;
-        display: inline-block;
-        padding-left: 0.5em;
-        padding-right: 0.5em;
-        margin-right: 0.5em;
-        margin-bottom: 0.5em;
-        color: #eee;
-        -webkit-border-radius: 3px;
-        -moz-border-radius: 3px;
-        border-radius: 3px;
-      }
-      .tag:hover{
-  
-      }
-      .tag-ui-add-btn {
-        cursor: pointer;
-        margin-left: 0.3em;
-      }
-      .tag-ui-add-btn:before {
-        content: '+ ADD TAG';
-        margin-right: 0.5em;
-        padding: 0.15em 0.3em;
-        background-color: #999;
-        color: #eee;
-        -webkit-transition: background-color 0.3s linear;
-        -moz-transition: background-color 0.3s linear;
-        -o-transition: background-color 0.3s linear;
-        transition: background-color 0.3s linear;
-        -webkit-border-radius: 3px;
-        -moz-border-radius: 3px;
-        border-radius: 3px;
-      }
-    `;
   rootElement;
   tagListElem;
   colorPicker;
@@ -71,9 +36,6 @@ class DefinitionTaggerView {
   eventTagReviewItemChanged = new EventEmitter();
 
   constructor() {
-    //Add CSS
-    GM_addStyle(this.css);
-
     //Configure the UI for the definition page
     var rootElement = $('#information');
     var tagContainer = rootElement.append(this.html);
