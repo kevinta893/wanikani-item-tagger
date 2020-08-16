@@ -7,7 +7,7 @@ class ReviewItemRepository {
   }
 
   async updateReviewItem(reviewItemDto) {
-    if (this.isNullOrEmpty(reviewItemDto.itemId)) {
+    if (StringUtil.isNullOrEmpty(reviewItemDto.itemId)) {
       throw new Error(`Review Item update failed, review item id is null. Review Item=${reviewItem}`);
     }
 
@@ -22,7 +22,7 @@ class ReviewItemRepository {
   }
 
   async putReviewItem(reviewItemDto) {
-    if (!this.isNullOrEmpty(reviewItemDto.itemId)) {
+    if (!StringUtil.isNullOrEmpty(reviewItemDto.itemId)) {
       throw new Error(`Review Item put failed, item id must be null to insert object. Review Item=${reviewItem}`);
     }
 
@@ -56,9 +56,5 @@ class ReviewItemRepository {
 
   generateStorageKey(reviewItemId) {
     return `${this.reviewItemsNamespace}/${reviewItemId}`;
-  }
-
-  isNullOrEmpty(str) {
-    return (!str || 0 === str.length);
   }
 }

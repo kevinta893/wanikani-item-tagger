@@ -10,7 +10,7 @@ class DefinitionTaggerView {
         <ul>
             <li id="tag-ui-open-input-btn" class="tag-ui-add-btn" title="Add your own tags" style="display: inline-block;"></li>
             <li id="tag-ui-input-form" style="display: none;">
-              <input id="tag-ui-input" type="text" autocaptialize="none" autocomplete="on" spellcheck="off" autocorrect="false" maxlength="100">
+              <input id="tag-ui-input" type="text" autocaptialize="none" autocomplete="on" spellcheck="off" autocorrect="false" maxlength="${Constants.MAX_TAG_TEXT_LENGTH}">
               <div id="tag-color-picker"></div>
               <button id="tag-ui-input-submit" class="tag-ui-add-btn"></button>
   
