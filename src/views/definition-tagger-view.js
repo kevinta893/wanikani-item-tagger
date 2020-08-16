@@ -18,6 +18,9 @@ class DefinitionTaggerView {
               <div id="tag-recent-list"></div>
             </li>
         </ul>
+        <div>
+          <div id="tag-editor"></div>
+        </div>
       </div>
     `;
   newTagHtml = `
@@ -143,7 +146,7 @@ class DefinitionTaggerView {
     this.tagListElem = tagContainer;
     this.rootElement = rootElement;
 
-    this.eventTagReviewItemChanged.emit(this.getCurrentWkItemData());
+    this.tagEditor = new TagEditorView('#tag-editor');
   }
 
   loadReviewItem(reviewItemViewModel) {
@@ -151,9 +154,7 @@ class DefinitionTaggerView {
 
     this.tagListElem.find('.tag').remove();
 
-    reviewItemViewModel.tags.forEach(tagViewModel => {
-      this.addTag(tagViewModel);
-    });
+    this.tagEditor.loadTagOptions(reviewItemViewModel.tags);
   }
 
   addTag(tagViewModel) {

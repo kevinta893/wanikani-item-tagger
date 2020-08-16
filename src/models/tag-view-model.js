@@ -6,4 +6,5 @@ class TagViewModel {
   tagId = 0;
   tagText = '';
   tagColor = '';     //Hexadecimal color
+  tagSelected = false;
 }
