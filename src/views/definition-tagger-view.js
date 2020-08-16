@@ -84,7 +84,9 @@ class DefinitionTaggerView {
 
     //Tag input
     var tagInput = $('#tag-ui-input');
+
     var addTagButton = $('#tag-ui-input-submit');
+    addTagButton.prop('disabled', true);
 
     this.colorPicker = new TagColorPickerView('#tag-color-picker');
 
@@ -97,10 +99,21 @@ class DefinitionTaggerView {
       tagInput.focus();
     });
 
+    //Disable tag enter button when text empty
+    tagInput.on('keyup', function (e) {
+      var inputText = tagInput.val();
+      if (inputText.length <= 0) {
+        addTagButton.prop('disabled', true);
+      } else {
+        addTagButton.prop('disabled', false);
+      }
+    });
+
     //When new tag is submitted
     var tagEnteredCallback = () => {
       var newTagText = tagInput.val();
       tagInput.val('');
+      addTagButton.prop('disabled', true);
       addTagFormRoot.hide();
       tagInputButton.show();
 
@@ -115,8 +128,9 @@ class DefinitionTaggerView {
 
     //Enter button used to submit
     addTagButton.on('click', tagEnteredCallback);
-    tagInput.on('keypress', function (e) {
-      if (e.which == 13) {
+    tagInput.on('keyup', function (e) {
+      var inputText = tagInput.val();
+      if (e.which == 13 && inputText.length > 0) {
         tagEnteredCallback();
       }
     });
