@@ -43,6 +43,9 @@ class TaggerController {
   }
 
   addTag(reviewItemViewModel, addedTagViewModel) {
+    // Clean tag text
+    addedTagViewModel.tagText = addedTagViewModel.tagText.trim();
+
     // Validate the entered tag text
     var tagText = addedTagViewModel.tagText;
     var isValidTagText = TagValidator.isValid(tagText);

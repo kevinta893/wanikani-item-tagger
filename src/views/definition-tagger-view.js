@@ -109,6 +109,11 @@ class DefinitionTaggerView {
       }
     });
 
+    tagInput.on('change', function (e){
+      var trimmedText = tagInput.val().trim();
+      tagInput.val(trimmedText);
+    });
+
     //When new tag is submitted
     var tagEnteredCallback = () => {
       var newTagText = tagInput.val();
