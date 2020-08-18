@@ -8,20 +8,22 @@ class TagColorPickerView {
 
   constructor(replaceElementSelector) {
     const defaultSwatch = [
-      '#F15A5A',
-      '#F0C419',
-      '#4EBA6F',
-      '#2D95BF',
-      '#955BA5',
+      '#DE392E',
+      '#DF9326',
+      '#E6E13D',
+      '#37CB39',
+      '#3D9DCE',
+      '#5640D2'
     ];
     this.colorPicker = Pickr.create({
       el: replaceElementSelector,
       theme: 'monolith',
 
       palette: true,
+      comparison: false,
       swatches: defaultSwatch,
-      default: defaultSwatch[4],
-
+      default: defaultSwatch[0],
+      
       components: {
         // Main components
         preview: true,
@@ -30,11 +32,15 @@ class TagColorPickerView {
 
         // Input / output Options
         interaction: {
-          rgb: true,
           input: true,
-          save: true
+          save: false
         }
       }
+    });
+
+    this.colorPicker.on('changestop', () => {
+      var pickedColor = this.colorPicker.getColor();
+      this.colorPicker.setColor(pickedColor.toHEXA().toString());
     });
   }
 

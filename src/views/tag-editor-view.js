@@ -37,6 +37,7 @@ class TagEditorView {
     var tagEditorFromRoot = this.tagEditorFromRoot = $('#tag-editor');
     var newTagInput = $('#tag-ui-input');
     var addNewTagButton = $('#tag-ui-input-submit');
+    var tagColorPicker = this.colorPicker = new TagColorPickerView('#tag-color-picker');
 
     //Disable tag enter button when text empty
     newTagInput.on('keyup', function (e) {
@@ -61,11 +62,8 @@ class TagEditorView {
 
       var newItemModel = new TagViewModel();
       newItemModel.tagText = newTagText;
-      newItemModel.tagColor = '#000000'; //this.colorPicker.getSelectedColor();
+      newItemModel.tagColor = this.colorPicker.getSelectedColor();
 
-      //Trigger event callbacks
-      //var reviewItemViewModel = this.getCurrentReviewItemViewModel();
-      //this.eventTagAdded.emit(reviewItemViewModel, newItemModel);
       this.eventNewTagCreated.emit(newItemModel);
     };
 
