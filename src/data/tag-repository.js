@@ -62,7 +62,7 @@ class TagRepository {
   }
 
   async getAllTags() {
-    var allTags = await this.dataContext.getAllValues((key) => key.indexOf(this.reviewItemsNamespace) == 0);
+    var allTags = await this.dataContext.getAllValues((key) => key.indexOf(this.tagNamespace) == 0);
     return allTags;
   }
 

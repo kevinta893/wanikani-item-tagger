@@ -91,6 +91,12 @@ class ReviewItemService {
     return reviewItemViewModel;
   }
 
+  async getAllSelectableTags(){
+    var tagDtos = await this.tagRepository.getAllTags();
+    var tagViewModels = tagDtos.map(tagDto => TagModelMapper.mapDTOToViewModel(tagDto));
+    return tagViewModels;
+  }
+
   async getUserStats() {
     var allTaggedItems = await this.reviewItemRepository.getAllReviewItems();
     var allTags = [].concat.apply([], allTaggedItems.map(item => item.tags));

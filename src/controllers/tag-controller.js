@@ -27,9 +27,10 @@ class TaggerController {
 
     // Load tag data to page
     this.loadTags();
+    this.loadCurrentReviewItem();
   }
 
-  async loadTags() {
+  async loadCurrentReviewItem() {
     var currentItem = this.tagView.getCurrentWkItemData();
     var itemName = currentItem.itemName;
     var itemType = currentItem.itemType;
@@ -43,6 +44,11 @@ class TaggerController {
       tag.isSelected = true;
     });
     this.tagView.loadReviewItem(existingReviewItemViewModel);
+  }
+
+  async loadTags(){
+    var selectableTags = await this.reviewItemService.getAllSelectableTags();
+    this.tagView.loadTagEditorOptions(selectableTags);
   }
 
   addTag(reviewItemViewModel, addedTagViewModel) {

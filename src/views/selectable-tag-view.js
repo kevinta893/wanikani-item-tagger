@@ -12,7 +12,7 @@ class SelectableTagView {
 
   tagElem;
 
-  tagId;
+  tagViewModel;
 
   eventTagEditClicked = new EventEmitter();
   eventTagSelectChanged = new EventEmitter();
@@ -23,7 +23,7 @@ class SelectableTagView {
    * @param {TagViewModel} tagViewModel Tag view model to display
    */
   constructor(el, tagViewModel) {
-    this.tagId = tagViewModel.tagId;
+    this.tagViewModel = tagViewModel;
 
     var rootElement = $(el);
     var newSelectableTag = $(this.html);
@@ -67,8 +67,9 @@ class SelectableTagView {
       this.showNotSelected();
     }
 
+    //Emit event only if changed from last time
     if (isSelected != previousIsSelected){
-      this.eventTagSelectChanged.emit(this.tagId, isSelected);
+      this.eventTagSelectChanged.emit(this.tagViewModel, isSelected);
     }
   }
 

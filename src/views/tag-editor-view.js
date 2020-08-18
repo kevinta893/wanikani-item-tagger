@@ -7,7 +7,7 @@ class TagEditorView {
         <button id="tag-ui-input-submit" class="tag-ui-add-btn"></button>
       </div>
       <div>
-        <div id="tag-picker-list">
+        <div id="tag-picker-list"></div>
       </div>
     </div>
   `;
@@ -16,6 +16,9 @@ class TagEditorView {
   `;
 
   tagPickerListElem;
+  tagPickList = {};
+
+  eventTagSelectionChanged = new EventEmitter();
 
   /**
    * Creates a tag editor view
@@ -28,6 +31,51 @@ class TagEditorView {
     rootElement.replaceWith(this.html);
 
     this.tagPickerListElem = $('#tag-picker-list');
+    
+    //Disable tag enter button when text empty
+    // tagInput.on('keyup', function (e) {
+    //   var inputText = tagInput.val();
+    //   if (inputText.length <= 0) {
+    //     addTagButton.prop('disabled', true);
+    //   } else {
+    //     addTagButton.prop('disabled', false);
+    //   }
+    // });
+
+    // tagInput.on('change', function (e){
+    //   var trimmedText = tagInput.val().trim();
+    //   tagInput.val(trimmedText);
+    // });
+
+    //When new tag is submitted
+    // var tagEnteredCallback = () => {
+    //   var newTagText = tagInput.val();
+    //   tagInput.val('');
+    //   addTagButton.prop('disabled', true);
+    //   addTagFormRoot.hide();
+    //   tagInputButton.show();
+
+    //   var newItemModel = new TagViewModel();
+    //   newItemModel.tagText = newTagText;
+    //   newItemModel.tagColor = this.colorPicker.getSelectedColor();
+
+    //   //Trigger event callbacks
+    //   var reviewItemViewModel = this.getCurrentReviewItemViewModel();
+    //   this.eventTagAdded.emit(reviewItemViewModel, newItemModel);
+    // };
+
+    // //Enter button used to submit
+    // addTagButton.on('click', tagEnteredCallback);
+    // tagInput.on('keyup', function (e) {
+    //   var inputText = tagInput.val();
+    //   if (e.which == 13 && inputText.length > 0) {
+    //     tagEnteredCallback();
+    //   }
+    // });
+  }
+
+  setTagSelection(tagId, isSelected){
+    this.tagPickList[tagId].setSelection(isSelected);
   }
 
   loadTagOptions(listOfTagViewModels) {
@@ -45,7 +93,14 @@ class TagEditorView {
 
     // Create tag picker option
     var tagPickOption = new SelectableTagView(`#${newTagPickId}`, tagViewModel);
-    tagPickOption.bindTagSelectChanged(() => { });
+    tagPickOption.bindTagSelectChanged((tagViewModel, isSelected) => { 
+      this.eventTagSelectionChanged.emit(tagViewModel, isSelected);
+    });
     tagPickOption.bindTagEditClicked(() => { });
+    this.tagPickList[tagViewModel.tagId] = tagPickOption;
+  }
+
+  bindTagSelectionChanged(handler){
+    this.eventTagSelectionChanged.addEventListener(handler);
   }
 }
