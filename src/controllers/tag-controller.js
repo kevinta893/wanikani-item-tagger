@@ -16,6 +16,10 @@ class TaggerController {
       this.removeTag(reviewItemViewModel, addedTagViewModel);
     });
 
+    this.tagView.bindNewTagCreated((newTagViewModel) => {
+      this.addNewTag(newTagViewModel);
+    });
+
     //Item changed event handler
     var itemChangedEvent = (wkItemData) => {
       this.reviewItemService.getReviewItem(wkItemData.itemType, wkItemData.itemName).then((reviewItemViewModel) => {
@@ -72,6 +76,14 @@ class TaggerController {
   removeTag(reviewItemViewModel, removedTagViewModel) {
     this.reviewItemService.removeTagFromReviewItem(reviewItemViewModel, removedTagViewModel).then((updatedReviewItemViewModel) => {
       this.tagView.loadReviewItem(updatedReviewItemViewModel);
+    });
+  }
+
+  addNewTag(newTagViewModel){
+    this.reviewItemService.addNewTag(newTagViewModel).then((newlyAddedTag) => {
+      this.tagView.addTagEditorTagOption(newlyAddedTag);
+      var reviewItemViewModel = this.tagView.getCurrentReviewItemViewModel();
+      this.addTag(reviewItemViewModel, newlyAddedTag);
     });
   }
 }

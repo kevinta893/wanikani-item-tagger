@@ -91,6 +91,18 @@ class ReviewItemService {
     return reviewItemViewModel;
   }
 
+  async addNewTag(tagViewModel){
+    var existingTagDto = await this.tagRepository.getTagByText(tagViewModel.tagText);
+    if (existingTagDto != null) {
+      throw new Error(`Tag already exists with text=${tagViewModel.tagText}`);
+    }
+    
+    //Tag does not exist, add
+    var tagToAddDto = TagModelMapper.mapViewModelToDTO(tagViewModel);
+    var addedTagDto = await this.tagRepository.putTag(tagToAddDto);
+    return TagModelMapper.mapDTOToViewModel(addedTagDto);
+  }
+
   async getAllSelectableTags(){
     var tagDtos = await this.tagRepository.getAllTags();
     var tagViewModels = tagDtos.map(tagDto => TagModelMapper.mapDTOToViewModel(tagDto));

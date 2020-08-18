@@ -91,6 +91,10 @@ class DefinitionTaggerView {
     this.tagEditor.loadTagOptions(listOfTagViewModels);
   }
 
+  addTagEditorTagOption(tagViewModel){
+    this.tagEditor.addTagPickOption(tagViewModel);
+  }
+
   addTag(tagViewModel) {
     var newTag = $(this.newTagHtml);
     newTag.attr('data-tag-id', tagViewModel.tagId);
@@ -154,5 +158,13 @@ class DefinitionTaggerView {
 
   bindReviewItemChanged(handler) {
     this.eventTagReviewItemChanged.addEventListener(handler);
+  }
+
+  bindNewTagCreated(handler){
+    this.tagEditor.bindNewTagCreated(handler);
+  }
+  
+  bindTagDeleted(handler){
+    this.tagEditor.bindTagDeleted(handler);
   }
 }
