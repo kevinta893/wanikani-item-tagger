@@ -13,6 +13,7 @@
 // @run-at      document-end
 // @grant       GM.setValue
 // @grant       GM.getValue
+// @grant       GM.deleteValue
 // @grant       GM.listValues
 // @grant       GM_addStyle
 // @resource    pickr_monolith_style https://cdn.jsdelivr.net/npm/@simonwep/pickr@1.7.2/dist/themes/monolith.min.css

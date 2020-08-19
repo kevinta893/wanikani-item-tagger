@@ -30,6 +30,13 @@ class TamperMonkeyUserDataContext {
   }
 
   /**
+   * Deletes a value for the given key
+   */
+  delete(key) {
+    return GM.deleteValue(key);
+  }
+
+  /**
    * Gets all keys
    * @returns Promise
    */

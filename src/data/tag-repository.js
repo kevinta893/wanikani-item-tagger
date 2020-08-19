@@ -44,6 +44,11 @@ class TagRepository {
     return await this.dataContext.get(key);
   }
 
+  async deleteTag(tagId){
+    var key = this.generateStorageKey(tagId);
+    await this.dataContext.delete(key);
+  }
+
   async getTagByText(tagText) {
     var allTags = await this.dataContext
       .getAllValues((key) => key.indexOf(this.tagNamespace) == 0)

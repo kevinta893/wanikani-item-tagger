@@ -5,15 +5,15 @@
 class DefinitionTaggerView {
 
   html = `
-      <div class="alternative-meaning">
-        <h2>Tags</h2>
-        <div id="tag-list"></div>
-        <button id="tag-ui-open-input-btn" class="tag-ui-add-btn" title="Edit Tags">Edit tags</button>
-        <div id="tag-ui-input-form" style="display: none;"> 
-          <div id="tag-editor"></div>
-        </div>
+    <div class="alternative-meaning">
+      <h2>Tags</h2>
+      <div id="tag-list"></div>
+      <button id="tag-ui-open-input-btn" class="tag-ui-add-btn" title="Edit Tags">Edit tags</button>
+      <div id="tag-ui-input-form" style="display: none;"> 
+        <div id="tag-editor"></div>
       </div>
-    `;
+    </div>
+  `;
   rootElement;
   tagListView;
   tagEditorView;
@@ -54,7 +54,7 @@ class DefinitionTaggerView {
     });
   }
 
-  tagSelectionChanged(tagViewModel, isSelected){
+  tagSelectionChanged(tagViewModel, isSelected) {
     var reviewItemViewModel = this.reviewItemViewModel;
 
     //Add or remove tags if they exist
@@ -76,7 +76,7 @@ class DefinitionTaggerView {
     this.tagEditorView.loadTagOptions(listOfTagViewModels);
   }
 
-  addTagEditorTagOption(tagViewModel){
+  addTagEditorTagOption(tagViewModel) {
     this.tagEditorView.addTagPickOption(tagViewModel);
   }
 
@@ -96,7 +96,7 @@ class DefinitionTaggerView {
     return wkItemData;
   }
 
-  getReviewItem(){
+  getReviewItem() {
     return this.reviewItemViewModel;
   }
 
@@ -112,11 +112,11 @@ class DefinitionTaggerView {
     this.eventTagReviewItemChanged.addEventListener(handler);
   }
 
-  bindNewTagCreated(handler){
+  bindNewTagCreated(handler) {
     this.tagEditorView.bindNewTagCreated(handler);
   }
-  
-  bindTagDeleted(handler){
+
+  bindTagDeleted(handler) {
     this.tagEditorView.bindTagDeleted(handler);
   }
 }
