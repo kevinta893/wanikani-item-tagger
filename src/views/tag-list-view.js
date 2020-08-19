@@ -38,7 +38,8 @@ class TagListView {
 
     this.removeAllTags();
 
-    reviewItemViewModel.tags.forEach(tagViewModel => {
+    var sortedTags = reviewItemViewModel.tags.sort((tag1, tag2) => tag1.tagText.localeCompare(tag2.tagText))
+    sortedTags.forEach(tagViewModel => {
       this.addTag(tagViewModel);
     });
   }
@@ -70,7 +71,6 @@ class TagListView {
   getCurrentReviewItemViewModel() {
     return this.reviewItemViewModel;
   }
-
 
   getCurrentTags() {
     var currentTags = this.tagListRoot.find('.tag')

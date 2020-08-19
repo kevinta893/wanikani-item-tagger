@@ -31,6 +31,7 @@ class SelectableTagView {
     rootElement.replaceWith(newSelectableTag);
 
     newSelectableTag.css('background-color', tagViewModel.tagColor);
+    newSelectableTag.attr('data-tag-id', tagViewModel.tagId);
     var isSelectedClass = tagViewModel.isSelected ? this.tagSelectedClass : this.tagNotSelectedClass;
     newSelectableTag.addClass(isSelectedClass);
 
@@ -49,6 +50,10 @@ class SelectableTagView {
 
   isSelected() {
     return this.tagElem.hasClass(this.tagSelectedClass);
+  }
+
+  getTagViewModel() {
+    return this.tagViewModel;
   }
 
   /**

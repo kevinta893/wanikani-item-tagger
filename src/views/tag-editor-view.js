@@ -22,7 +22,7 @@ class TagEditorView {
 
   eventTagSelectionChanged = new EventEmitter();
   eventNewTagCreated = new EventEmitter();
-  evetnTagDeleted = new EventEmitter();
+  eventTagDeleted = new EventEmitter();
 
   /**
    * Creates a tag editor view
@@ -50,7 +50,7 @@ class TagEditorView {
       }
     });
 
-    newTagInput.on('change', function (e){
+    newTagInput.on('change', function (e) {
       var trimmedText = newTagInput.val().trim();
       newTagInput.val(trimmedText);
     });
@@ -78,24 +78,30 @@ class TagEditorView {
     });
   }
 
-  show(){
+  show() {
     this.tagEditorFormRoot.show();
   }
 
-  hide(){
+  hide() {
     this.tagEditorFormRoot.hide();
   }
 
-  loadReviewItemSelection(reviewItemViewModel){
+  loadReviewItemSelection(reviewItemViewModel) {
     this.deselectAllTags();
 
     reviewItemViewModel.tags.forEach(tagViewModel => {
       this.tagPickMap[tagViewModel.tagId].setSelection(true);
     });
+
+    this.sortTagOptions();
   }
 
   loadTagOptions(listOfTagViewModels) {
-    listOfTagViewModels.forEach(tagViewModel => {
+    this.tagPickMap = {};
+    this.tagPickList = [];
+
+    var sortedTags = listOfTagViewModels.sort((tag1, tag2) => tag1.tagText.localeCompare(tag2.tagText));
+    sortedTags.forEach(tagViewModel => {
       this.addTagPickOption(tagViewModel);
     });
   }
@@ -109,7 +115,7 @@ class TagEditorView {
 
     // Create tag picker option
     var tagPickOption = new SelectableTagView(`#${newTagPickId}`, tagViewModel);
-    tagPickOption.bindTagSelectChanged((tagViewModel, isSelected) => { 
+    tagPickOption.bindTagSelectChanged((tagViewModel, isSelected) => {
       this.eventTagSelectionChanged.emit(tagViewModel, isSelected);
     });
     tagPickOption.bindTagEditClicked(() => { });
@@ -118,21 +124,51 @@ class TagEditorView {
     this.tagPickList.push(tagPickOption);
   }
 
-  deselectAllTags(){
+  sortTagOptions() {
+    var sortedPickerList = this.tagPickerListElem.find('.tag-select-option').sort((tagElem1, tagElem2) => {
+      var tagId1 = $(tagElem1).attr('data-tag-id');
+      var tagId2 = $(tagElem2).attr('data-tag-id');
+
+      var tagPick1 = this.tagPickMap[tagId1];
+      var tagPick2 = this.tagPickMap[tagId2];
+
+      var tag1IsSelected = tagPick1.isSelected();
+      var tag2IsSelected = tagPick2.isSelected();
+
+      var tag1Text = tagPick1.getTagViewModel().tagText;
+      var tag2Text = tagPick2.getTagViewModel().tagText;
+
+      if (tag1IsSelected && !tag2IsSelected) {
+        return -1;
+      }
+      if (tag1IsSelected == tag2IsSelected) {
+        return tag1Text.localeCompare(tag2Text);
+      }
+      if (!tag1IsSelected && tag2IsSelected) {
+        return 1;
+      }
+    });
+
+    $.each(sortedPickerList, (index, row) => {
+      this.tagPickerListElem.append(row);
+    });
+  }
+
+  deselectAllTags() {
     this.tagPickList.forEach(selectableTagView => {
       selectableTagView.setSelection(false);
     });
   }
 
-  bindTagSelectionChanged(handler){
+  bindTagSelectionChanged(handler) {
     this.eventTagSelectionChanged.addEventListener(handler);
   }
-  
-  bindNewTagCreated(handler){
+
+  bindNewTagCreated(handler) {
     this.eventNewTagCreated.addEventListener(handler);
   }
 
-  bindTagDeleted(handler){
-    this.evetnTagDeleted.addEventListener(handler);
+  bindTagDeleted(handler) {
+    this.eventTagDeleted.addEventListener(handler);
   }
 }
