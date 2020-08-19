@@ -82,7 +82,7 @@ class TaggerController {
   addNewTag(newTagViewModel){
     this.reviewItemService.addNewTag(newTagViewModel).then((newlyAddedTag) => {
       this.tagView.addTagEditorTagOption(newlyAddedTag);
-      var reviewItemViewModel = this.tagView.getCurrentReviewItemViewModel();
+      var reviewItemViewModel = this.tagView.getReviewItem();
       this.addTag(reviewItemViewModel, newlyAddedTag);
     });
   }

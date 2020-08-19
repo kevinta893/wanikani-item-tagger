@@ -51,25 +51,34 @@ class SelectableTagView {
     return this.tagElem.hasClass(this.tagSelectedClass);
   }
 
+  /**
+   * Toggles the current selection on/off
+   * Emits Tag select changed event
+   */
   toggleSelection() {
+    var previousIsSelected = this.isSelected();
+
     var isSelected = this.isSelected();
     isSelected = !isSelected;
     this.setSelection(isSelected);
+
+    //Emit event only if changed from last time and user clicked
+    if (isSelected != previousIsSelected) {
+      this.eventTagSelectChanged.emit(this.tagViewModel, isSelected);
+    }
   }
 
+  /**
+   * Sets this view's selection status
+   * Does not trigger selection changed event
+   * @param {boolean} isSelected 
+   */
   setSelection(isSelected) {
-    var previousIsSelected = this.isSelected();
-
     if (isSelected) {
       this.showSelected();
     }
     else {
       this.showNotSelected();
-    }
-
-    //Emit event only if changed from last time
-    if (isSelected != previousIsSelected){
-      this.eventTagSelectChanged.emit(this.tagViewModel, isSelected);
     }
   }
 

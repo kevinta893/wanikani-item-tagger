@@ -4,7 +4,7 @@ class TagEditorView {
       <div>
         <div id="tag-color-picker"></div>
         <input id="tag-ui-input" type="text" autocaptialize="none" autocomplete="on" spellcheck="off" autocorrect="false" maxlength="${Constants.MAX_TAG_TEXT_LENGTH}">
-        <button id="tag-ui-input-submit" class="tag-ui-add-btn" disabled></button>
+        <button id="tag-ui-input-submit" class="tag-ui-add-btn" disabled>AddTag</button>
       </div>
       <div>
         <div id="tag-picker-list"></div>
@@ -15,9 +15,10 @@ class TagEditorView {
     <div></div>
   `;
 
-  tagEditorFromRoot;
+  tagEditorFormRoot;
   tagPickerListElem;
-  tagPickList = {};
+  tagPickMap = {};
+  tagPickList = [];
 
   eventTagSelectionChanged = new EventEmitter();
   eventNewTagCreated = new EventEmitter();
@@ -34,7 +35,7 @@ class TagEditorView {
     rootElement.replaceWith(this.html);
 
     var tagPickerList = this.tagPickerListElem = $('#tag-picker-list');
-    var tagEditorFromRoot = this.tagEditorFromRoot = $('#tag-editor');
+    var tagEditorFromRoot = this.tagEditorFormRoot = $('#tag-editor');
     var newTagInput = $('#tag-ui-input');
     var addNewTagButton = $('#tag-ui-input-submit');
     var tagColorPicker = this.colorPicker = new TagColorPickerView('#tag-color-picker');
@@ -78,15 +79,19 @@ class TagEditorView {
   }
 
   show(){
-    this.tagEditorFromRoot.show();
+    this.tagEditorFormRoot.show();
   }
 
   hide(){
-    this.tagEditorFromRoot.hide();
+    this.tagEditorFormRoot.hide();
   }
 
-  setTagSelection(tagId, isSelected){
-    this.tagPickList[tagId].setSelection(isSelected);
+  loadReviewItemSelection(reviewItemViewModel){
+    this.deselectAllTags();
+
+    reviewItemViewModel.tags.forEach(tagViewModel => {
+      this.tagPickMap[tagViewModel.tagId].setSelection(true);
+    });
   }
 
   loadTagOptions(listOfTagViewModels) {
@@ -108,7 +113,15 @@ class TagEditorView {
       this.eventTagSelectionChanged.emit(tagViewModel, isSelected);
     });
     tagPickOption.bindTagEditClicked(() => { });
-    this.tagPickList[tagViewModel.tagId] = tagPickOption;
+
+    this.tagPickMap[tagViewModel.tagId] = tagPickOption;
+    this.tagPickList.push(tagPickOption);
+  }
+
+  deselectAllTags(){
+    this.tagPickList.forEach(selectableTagView => {
+      selectableTagView.setSelection(false);
+    });
   }
 
   bindTagSelectionChanged(handler){

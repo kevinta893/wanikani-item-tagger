@@ -7,21 +7,17 @@ class DefinitionTaggerView {
   html = `
       <div class="alternative-meaning">
         <h2>Tags</h2>
-        <ul>
-            <li id="tag-ui-open-input-btn" class="tag-ui-add-btn" title="Add your own tags" style="display: inline-block;"></li>
-            <li id="tag-ui-input-form" style="display: none;"> 
-              <div id="tag-editor"></div>
-              <div id="tag-list-selected"></div>
-              <div id="tag-recent-list"></div>
-            </li>
-        </ul>
+        <div id="tag-list"></div>
+        <button id="tag-ui-open-input-btn" class="tag-ui-add-btn" title="Edit Tags">Edit tags</button>
+        <div id="tag-ui-input-form" style="display: none;"> 
+          <div id="tag-editor"></div>
+        </div>
       </div>
     `;
-  newTagHtml = `
-      <li class="tag"></li>
-    `;
   rootElement;
-  tagListElem;
+  tagListView;
+  tagEditorView;
+
   reviewItemViewModel;
 
   eventTagAdded = new EventEmitter();
@@ -49,87 +45,39 @@ class DefinitionTaggerView {
       addTagFormRoot.show();
     });
 
-    this.tagListElem = tagContainer;
+    this.tagListView = new TagListView('#tag-list');
     this.rootElement = rootElement;
 
-    this.tagEditor = new TagEditorView('#tag-editor');
-    this.tagEditor.bindTagSelectionChanged((tagViewModel, isSelected) => {
+    this.tagEditorView = new TagEditorView('#tag-editor');
+    this.tagEditorView.bindTagSelectionChanged((tagViewModel, isSelected) => {
       this.tagSelectionChanged(tagViewModel, isSelected);
     });
   }
 
   tagSelectionChanged(tagViewModel, isSelected){
-    var reviewItemViewModel = this.getCurrentReviewItemViewModel();
-    var haveTag = this.hasTag(tagViewModel.tagId);
+    var reviewItemViewModel = this.reviewItemViewModel;
 
     //Add or remove tags if they exist
     if (isSelected) {
-      if (!haveTag) {
-        this.addTag(tagViewModel);
-        this.eventTagAdded.emit(reviewItemViewModel, tagViewModel);
-      }
+      this.eventTagAdded.emit(reviewItemViewModel, tagViewModel);
     } else {
-      if (haveTag) {
-        this.removeTag(tagViewModel);
-        this.eventTagRemoved.emit(reviewItemViewModel, tagViewModel);
-      }
+      this.eventTagRemoved.emit(reviewItemViewModel, tagViewModel);
     }
   }
 
   loadReviewItem(reviewItemViewModel) {
     this.reviewItemViewModel = reviewItemViewModel;
 
-    this.tagListElem.find('.tag').remove();
-
-    reviewItemViewModel.tags.forEach(tagViewModel => {
-      this.addTag(tagViewModel);
-      this.tagEditor.setTagSelection(tagViewModel.tagId, true);
-    });
+    this.tagListView.loadReviewItem(reviewItemViewModel);
+    this.tagEditorView.loadReviewItemSelection(reviewItemViewModel);
   }
 
   loadTagEditorOptions(listOfTagViewModels) {
-    this.tagEditor.loadTagOptions(listOfTagViewModels);
+    this.tagEditorView.loadTagOptions(listOfTagViewModels);
   }
 
   addTagEditorTagOption(tagViewModel){
-    this.tagEditor.addTagPickOption(tagViewModel);
-  }
-
-  addTag(tagViewModel) {
-    var newTag = $(this.newTagHtml);
-    newTag.attr('data-tag-id', tagViewModel.tagId);
-    newTag.css('background-color', tagViewModel.tagColor);
-    newTag.data('tag-view-model', tagViewModel);
-    newTag.text(tagViewModel.tagText);
-
-    this.tagListElem.find('li.tag-ui-add-btn').before(newTag);
-  }
-
-  removeTag(tagViewModel) {
-    this.tagListElem.find(`.tag[data-tag-id="${tagViewModel.tagId}"]`).get(0).remove();
-  }
-
-  hasTag(tagId) {
-    return this.tagListElem.find(`.tag[data-tag-id="${tagId}"]`).length > 0;
-  }
-
-  getCurrentTags() {
-    var currentTags = this.tagListElem.find('.tag')
-      .map((i, tagElem) => $(tagElem).data('tag-view-model'));
-    return Array.from(currentTags);
-  }
-
-  getCurrentReviewItemViewModel() {
-    var tags = this.getCurrentTags();
-    this.reviewItemViewModel.tags = tags;
-
-    return this.reviewItemViewModel;
-  }
-
-  getCurrentTags() {
-    var currentTags = this.tagListElem.find('.tag')
-      .map((i, tagElem) => $(tagElem).data('tag-view-model'));
-    return Array.from(currentTags);
+    this.tagEditorView.addTagPickOption(tagViewModel);
   }
 
   getCurrentWkItemData() {
@@ -148,6 +96,10 @@ class DefinitionTaggerView {
     return wkItemData;
   }
 
+  getReviewItem(){
+    return this.reviewItemViewModel;
+  }
+
   bindTagAdded(handler) {
     this.eventTagAdded.addEventListener(handler);
   }
@@ -161,10 +113,10 @@ class DefinitionTaggerView {
   }
 
   bindNewTagCreated(handler){
-    this.tagEditor.bindNewTagCreated(handler);
+    this.tagEditorView.bindNewTagCreated(handler);
   }
   
   bindTagDeleted(handler){
-    this.tagEditor.bindTagDeleted(handler);
+    this.tagEditorView.bindTagDeleted(handler);
   }
 }

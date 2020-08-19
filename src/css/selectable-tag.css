@@ -4,7 +4,7 @@
   padding-left: 0.5em;
   padding-right: 0.5em;
   margin-right: 0.5em;
-  margin-bottom: 0.5em;
+  margin-bottom: 0.5em !important;
   color: #eee;
   -webkit-border-radius: 3px;
   -moz-border-radius: 3px;
