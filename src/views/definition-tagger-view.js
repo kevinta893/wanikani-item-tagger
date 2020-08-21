@@ -9,9 +9,7 @@ class DefinitionTaggerView {
       <h2>Tags</h2>
       <div id="tag-list"></div>
       <button id="tag-ui-open-input-btn" class="tag-ui-add-btn" title="Edit Tags">Edit tags</button>
-      <div id="tag-ui-input-form" style="display: none;"> 
-        <div id="tag-editor"></div>
-      </div>
+      <div id="tag-editor"></div>
     </div>
   `;
   rootElement;
@@ -39,18 +37,18 @@ class DefinitionTaggerView {
     var addTagButton = $('#tag-ui-input-submit');
     addTagButton.prop('disabled', true);
 
-    //Open up input UI when add tag button clicked
-    tagInputButton.on('click', () => {
-      tagInputButton.hide();
-      addTagFormRoot.show();
-    });
-
     this.tagListView = new TagListView('#tag-list');
     this.rootElement = rootElement;
 
     this.tagEditorView = new TagEditorView('#tag-editor');
+    this.tagEditorView.hide();
     this.tagEditorView.bindTagSelectionChanged((tagViewModel, isSelected) => {
       this.tagSelectionChanged(tagViewModel, isSelected);
+    });
+
+    //Open up input UI when add tag button clicked
+    tagInputButton.on('click', () => {
+      this.tagEditorView.toggleEditorView();
     });
   }
 

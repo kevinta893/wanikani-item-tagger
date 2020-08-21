@@ -1,0 +1,40 @@
+#tag-editor {
+  position: absolute;
+  background-color: #f1f1f1;
+  width: 25em;
+  box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+}
+
+#tag-editor-form {
+  margin-top: 0.5em;
+  margin-bottom: 1em;
+}
+
+.tag-editor-show {
+  display: block;
+}
+
+.tag-editor-hide {
+  display: none;
+}
+
+.pickr {
+  display: inline-block;
+  margin-top: 0.5em;
+  margin-left: 0.8em;
+  margin-bottom: 0em !important;
+}
+
+#tag-editor-input {
+  margin-top: 0.1em;
+  margin-bottom: 0em !important;
+}
+
+#tag-picker-list {
+  overflow-y: scroll;
+  padding-top: 0.5em;
+  margin-left: 0.8em;
+  margin-bottom: 0.5em !important;
+  height: 15em;
+}

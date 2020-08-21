@@ -97,6 +97,14 @@ class SelectableTagView {
     this.tagElem.addClass(this.tagNotSelectedClass);
   }
 
+  show() {
+    this.tagElem.show();
+  }
+
+  hide() {
+    this.tagElem.hide();
+  }
+
   /**
    * Bind event when the tag selection changed
    * @param {function} handler Calls back with (tagId, bool isSelected)

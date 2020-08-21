@@ -1,7 +1,6 @@
 .tag-ui-add-btn {
   display: inline-block;
   cursor: pointer;
-  margin-left: 0.3em;
 }
 
 .tag-ui-add-btn:before {
