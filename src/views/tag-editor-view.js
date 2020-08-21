@@ -38,7 +38,7 @@ class TagEditorView {
     var tagPickerList = this.tagPickerListElem = $('#tag-picker-list');
     var tagEditorFromRoot = this.tagEditorFormRoot = $('#tag-editor');
     var newTagInput = this.newTagInput = $('#tag-editor-input');
-    var addNewTagButton = $('#tag-editor-input-submit');
+    var addNewTagButton = this.addNewTagButton = $('#tag-editor-input-submit');
     var tagColorPicker = this.colorPicker = new TagColorPickerView('#tag-color-picker');
 
     this.hide();
@@ -70,25 +70,11 @@ class TagEditorView {
       newTagInput.val(trimmedText);
     });
 
-    //When new tag is submitted
-    var tagEnteredCallback = () => {
-      var newTagText = newTagInput.val();
-      newTagInput.val('');
-      addNewTagButton.prop('disabled', true);
-
-      var newItemModel = new TagViewModel();
-      newItemModel.tagText = newTagText;
-      newItemModel.tagColor = this.colorPicker.getSelectedColor();
-
-      this.eventNewTagCreated.emit(newItemModel);
-    };
-
     //Enter button used to submit
-    addNewTagButton.on('click', tagEnteredCallback);
+    addNewTagButton.on('click', (e) => this.newTagEntered());
     newTagInput.on('keyup', (e) => {
-      var inputText = newTagInput.val();
-      if (e.which == 13 && inputText.length > 0) {
-        tagEnteredCallback();
+      if (e.which == 13) {
+        this.newTagEntered();
       }
     });
 
@@ -100,6 +86,22 @@ class TagEditorView {
     //   }
     // });
   }
+
+  newTagEntered() {
+    var newTagText = this.newTagInput.val();
+    if (newTagText.length <= 0){
+      return;
+    }
+
+    this.newTagInput.val('');
+    this.addNewTagButton.prop('disabled', true);
+
+    var newItemModel = new TagViewModel();
+    newItemModel.tagText = newTagText;
+    newItemModel.tagColor = this.colorPicker.getSelectedColor();
+
+    this.eventNewTagCreated.emit(newItemModel);
+  };
 
   toggleEditorView() {
     var isVisible = this.isViewVisible();
