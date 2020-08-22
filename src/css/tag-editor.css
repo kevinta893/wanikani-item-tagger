@@ -6,7 +6,7 @@
   z-index: 1;
 }
 
-#tag-editor-form {
+#tag-create-form {
   margin-top: 0.5em;
   margin-bottom: 1em;
 }
@@ -26,7 +26,7 @@
   margin-bottom: 0em !important;
 }
 
-#tag-editor-input {
+#tag-create-input {
   margin-top: 0.1em;
   margin-bottom: 0em !important;
 }

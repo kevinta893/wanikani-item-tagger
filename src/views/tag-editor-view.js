@@ -1,10 +1,15 @@
 class TagEditorView {
   html = `
     <div id="tag-editor">
-      <div id="tag-editor-form">
-        <div id="tag-color-picker"></div>
-        <input id="tag-editor-input" type="text" autocaptialize="none" autocomplete="on" spellcheck="off" autocorrect="false" maxlength="${Constants.MAX_TAG_TEXT_LENGTH}">
-        <button id="tag-editor-input-submit" class="tag-ui-add-btn" disabled>AddTag</button>
+      <div id="tag-edit-form">
+        <div id="tag-edit-color-picker"></div>
+        <input id="tag-edit-input" type="text" autocaptialize="none" autocomplete="on" spellcheck="off" autocorrect="false" maxlength="${Constants.MAX_TAG_TEXT_LENGTH}">
+        <button id="tag-edit-input-submit" class="tag-ui-add-btn" disabled>AddTag</button>
+      </div>
+      <div id="tag-create-form">
+        <div id="tag-create-color-picker"></div>
+        <input id="tag-create-input" type="text" autocaptialize="none" autocomplete="on" spellcheck="off" autocorrect="false" maxlength="${Constants.MAX_TAG_TEXT_LENGTH}">
+        <button id="tag-create-input-submit" class="tag-ui-add-btn" disabled>AddTag</button>
       </div>
       <div id="tag-picker-list"></div>
     </div>
@@ -14,15 +19,27 @@ class TagEditorView {
   `;
 
   rootElement;
-  tagEditorFormRoot;
-  newTagInput;
+  tagEditorRootElem;
+
+  tagEditForm;
+  tagEditForm;
+  tagEditInput;
+  tagEditSubmitBtn;
+  tagEditColorPicker;
+
+  tagCreateForm;
+  tagCreateForm;
+  tagCreateInput;
+  tagCreateSubmitBtn;
+  tagCreateColorPicker
 
   tagPickerListElem;
   tagPickMap = {};
   tagPickList = [];
 
   eventTagSelectionChanged = new EventEmitter();
-  eventNewTagCreated = new EventEmitter();
+  eventTagCreated = new EventEmitter();
+  eventTagUpdated = new EventEmitter();
   eventTagDeleted = new EventEmitter();
 
   /**
@@ -35,27 +52,37 @@ class TagEditorView {
     var rootElement = $(this.html);
     $(el).replaceWith(rootElement);
 
-    var tagPickerList = this.tagPickerListElem = $('#tag-picker-list');
-    var tagEditorFromRoot = this.tagEditorFormRoot = $('#tag-editor');
-    var newTagInput = this.newTagInput = $('#tag-editor-input');
-    var addNewTagButton = this.addNewTagButton = $('#tag-editor-input-submit');
-    var tagColorPicker = this.colorPicker = new TagColorPickerView('#tag-color-picker');
+    this.tagEditorRootElem = $('#tag-editor');
+
+    this.tagEditForm = $('#tag-edit-form');
+    this.tagEditForm.hide();
+    this.tagEditInput = $('#tag-edit-input');
+    this.tagEditSubmitBtn = $('#tag-edit-input-submit');
+    this.tagEditColorPicker = new TagColorPickerView('#tag-edit-color-picker');
+
+    this.tagCreateForm = $('#tag-create-form');
+    this.tagCreateForm.show();
+    this.tagCreateInput = $('#tag-create-input');
+    this.tagCreateSubmitBtn = $('#tag-create-input-submit');
+    this.tagCreateColorPicker = new TagColorPickerView('#tag-create-color-picker');
+
+    this.tagPickerListElem = $('#tag-picker-list');
 
     this.hide();
 
     //Disable tag enter button when text empty
-    newTagInput.on('input', function (e) {
-      var inputText = newTagInput.val();
+    this.tagCreateInput.on('input', (e) => {
+      var inputText = this.tagCreateInput.val();
       if (inputText.length <= 0) {
-        addNewTagButton.prop('disabled', true);
+        this.tagCreateSubmitBtn.prop('disabled', true);
       } else {
-        addNewTagButton.prop('disabled', false);
+        this.tagCreateSubmitBtn.prop('disabled', false);
       }
     });
 
     //Text changed, show relevant simular tags
-    newTagInput.on('input', (e) => {
-      var inputText = newTagInput.val();
+    this.tagCreateInput.on('input', (e) => {
+      var inputText = this.tagCreateInput.val();
 
       if (inputText.length > 0) {
         this.showSearchTagName(inputText);
@@ -65,14 +92,14 @@ class TagEditorView {
     });
 
     //Trim text input
-    newTagInput.on('change', (e) => {
-      var trimmedText = newTagInput.val().trim();
-      newTagInput.val(trimmedText);
+    this.tagCreateInput.on('change', (e) => {
+      var trimmedText = this.tagCreateInput.val().trim();
+      this.tagCreateInput.val(trimmedText);
     });
 
     //Enter button used to submit
-    addNewTagButton.on('click', (e) => this.newTagEntered());
-    newTagInput.on('keyup', (e) => {
+    this.tagCreateSubmitBtn.on('click', (e) => this.newTagEntered());
+    this.tagCreateInput.on('keyup', (e) => {
       if (e.which == 13) {
         this.newTagEntered();
       }
@@ -88,19 +115,19 @@ class TagEditorView {
   }
 
   newTagEntered() {
-    var newTagText = this.newTagInput.val();
+    var newTagText = this.tagCreateInput.val();
     if (newTagText.length <= 0){
       return;
     }
 
-    this.newTagInput.val('');
-    this.addNewTagButton.prop('disabled', true);
+    this.tagCreateInput.val('');
+    this.tagCreateSubmitBtn.prop('disabled', true);
 
     var newItemModel = new TagViewModel();
     newItemModel.tagText = newTagText;
-    newItemModel.tagColor = this.colorPicker.getSelectedColor();
+    newItemModel.tagColor = this.tagCreateColorPicker.getSelectedColor();
 
-    this.eventNewTagCreated.emit(newItemModel);
+    this.eventTagCreated.emit(newItemModel);
   };
 
   toggleEditorView() {
@@ -113,18 +140,18 @@ class TagEditorView {
   }
 
   isViewVisible() {
-    return this.tagEditorFormRoot.hasClass('tag-editor-show')
+    return this.tagEditorRootElem.hasClass('tag-editor-show')
   }
 
   show() {
-    this.tagEditorFormRoot.addClass('tag-editor-show');
-    this.tagEditorFormRoot.removeClass('tag-editor-hide');
-    this.newTagInput.focus();
+    this.tagEditorRootElem.addClass('tag-editor-show');
+    this.tagEditorRootElem.removeClass('tag-editor-hide');
+    this.tagCreateInput.focus();
   }
 
   hide() {
-    this.tagEditorFormRoot.addClass('tag-editor-hide');
-    this.tagEditorFormRoot.removeClass('tag-editor-show');
+    this.tagEditorRootElem.addClass('tag-editor-hide');
+    this.tagEditorRootElem.removeClass('tag-editor-show');
   }
 
   loadReviewItemSelection(reviewItemViewModel) {
@@ -235,10 +262,14 @@ class TagEditorView {
   }
 
   bindNewTagCreated(handler) {
-    this.eventNewTagCreated.addEventListener(handler);
+    this.eventTagCreated.addEventListener(handler);
   }
 
   bindTagDeleted(handler) {
     this.eventTagDeleted.addEventListener(handler);
+  }
+  
+  bindTagUpdated(handler){
+    this.eventTagUpdated.addEventListener(handler);
   }
 }
