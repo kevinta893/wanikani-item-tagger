@@ -55,8 +55,8 @@ class TagPickerListView {
     tagPickOption.bindTagSelectChanged((tagViewModel, isSelected) => {
       this.eventTagSelectionChanged.emit(tagViewModel, isSelected);
     });
-    tagPickOption.bindTagEditClicked(() => {
-      //TODO
+    tagPickOption.bindTagEditClicked((tagViewModel) => {
+      this.eventTagEditClicked.emit(tagViewModel);
     });
 
     this.tagPickMap[tagViewModel.tagId] = tagPickOption;
@@ -137,6 +137,14 @@ class TagPickerListView {
   hasTagByText(tagText){
     var existingTag = this.tags.find(tagViewModel => tagViewModel.tagText == tagText);
     return existingTag == null ? false : true;
+  }
+
+  show(){
+    this.tagPickerListView.show();
+  }
+
+  hide(){
+    this.tagPickerListView.hide();
   }
 
   bindTagSelectionChanged(handler) {

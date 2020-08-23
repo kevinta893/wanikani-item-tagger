@@ -50,4 +50,8 @@ class TagColorPickerView {
   getSelectedColor() {
     return this.colorPicker.getSelectedColor().toHEXA().toString();
   }
+
+  setSelectedColor(hexColor) {
+    this.colorPicker.setColor(hexColor);
+  }
 }

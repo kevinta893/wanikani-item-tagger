@@ -48,7 +48,7 @@ class SelectableTagView {
     // Edit button click
     var tagEditButton = tagElem.find('.tag-select-edit-btn');
     tagEditButton.on('click', () => {
-      this.eventTagEditClicked.emit()
+      this.eventTagEditClicked.emit(this.tagViewModel);
     });
 
     // Tag Clicked

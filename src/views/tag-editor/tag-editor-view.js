@@ -56,10 +56,36 @@ class TagEditorView {
       this.eventTagSelectionChanged.emit(tagViewModel, isSelected);
     });
 
+    //Tag picked to be edited
     this.tagPickerListView.bindTagEditClicked((tagViewModel) => {
-      //TODO
+      this.showEditMode(tagViewModel);
     });
 
+    //Tag edit cancelled
+    this.tagEditView.bindTagEditCancelled(() => {
+      this.showCreatePickMode();
+    });
+
+    //Tag edit delete tag
+    this.tagEditView.bindTagEditCancelled((tagViewModel) => {
+      this.eventTagDeleted.emit(tagViewModel);
+    });
+
+    //Tag edit update
+    this.tagEditView.bindTagUpdated((updatedTagViewModel) => {
+      this.eventTagUpdated.emit(updatedTagViewModel);
+      this.showCreatePickMode();
+    });
+
+    //Tag edit text updated
+    this.tagEditView.bindTagTextInput((inputText) => {
+      var hasTag = this.tagPickerListView.hasTagByText(inputText);
+      if (hasTag) {
+        this.tagEditView.showValidationErrorTagExists();
+      }
+    });
+
+    //TODO
     // Dropdown loses focus, hide
     // rootElement.focusout((e) => {
     //   var newFocusedElem = $(':focus');
@@ -89,7 +115,6 @@ class TagEditorView {
   show() {
     this.tagEditorRootElem.addClass('tag-editor-show');
     this.tagEditorRootElem.removeClass('tag-editor-hide');
-
   }
 
   hide() {
@@ -112,11 +137,13 @@ class TagEditorView {
   showCreatePickMode() {
     this.tagEditView.hide();
     this.tagCreateView.show();
+    this.tagPickerListView.show();
   }
 
   showEditMode(tagViewModel) {
-    this.tagEditView.show(tagViewModel);
+    this.tagPickerListView.hide();
     this.tagCreateView.hide();
+    this.tagEditView.show(tagViewModel);
   }
 
   bindTagSelectionChanged(handler) {

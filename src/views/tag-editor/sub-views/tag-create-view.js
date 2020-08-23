@@ -2,7 +2,7 @@ class TagCreateView {
   html = `
     <div id="tag-create-form">
       <div id="tag-create-color-picker"></div>
-      <input id="tag-create-input" type="text" autocaptialize="none" autocomplete="on" spellcheck="off" autocorrect="false" maxlength="${Constants.MAX_TAG_TEXT_LENGTH}">
+      <input id="tag-create-input" type="text" autocaptialize="none" autocomplete="off" spellcheck="on" autocorrect="false" maxlength="${Constants.MAX_TAG_TEXT_LENGTH}">
       <button id="tag-create-input-submit" class="tag-ui-add-btn" disabled>AddTag</button>
     </div>
   `;
