@@ -26,7 +26,7 @@ class TagColorPickerView {
       comparison: false,
       swatches: defaultSwatch,
       default: defaultSwatch[0],
-      
+
       components: {
         // Main components
         preview: true,
