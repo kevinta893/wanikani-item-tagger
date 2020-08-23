@@ -36,16 +36,15 @@ class TagCreateView {
     this.tagCreateInput.on('input', (e) => {
       var inputText = this.tagCreateInput.val();
       if (inputText.length <= 0) {
-        this.tagCreateSubmitBtn.prop('disabled', true);
+        this.disableCreateButton();
       } else {
-        this.tagCreateSubmitBtn.prop('disabled', false);
+        this.enableCreateButton();
       }
     });
 
     //Text changed, show relevant simular tags
     this.tagCreateInput.on('input', (e) => {
       var inputText = this.tagCreateInput.val();
-
       this.eventTagTextInput.emit(inputText);
     });
 
@@ -62,6 +61,14 @@ class TagCreateView {
         this.newTagEntered();
       }
     });
+  }
+
+  disableCreateButton() {
+    this.tagCreateSubmitBtn.prop('disabled', true);
+  }
+
+  enableCreateButton() {
+    this.tagCreateSubmitBtn.prop('disabled', false);
   }
 
   newTagEntered() {

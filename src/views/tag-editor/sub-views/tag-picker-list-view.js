@@ -8,6 +8,7 @@ class TagPickerListView {
 
   tagPickerListView;
 
+  tags = [];
   tagPickMap = {};
   tagPickList = [];
 
@@ -32,6 +33,7 @@ class TagPickerListView {
   }
 
   loadTagOptions(listOfTagViewModels) {
+    this.tags = [];
     this.tagPickMap = {};
     this.tagPickList = [];
 
@@ -59,6 +61,7 @@ class TagPickerListView {
 
     this.tagPickMap[tagViewModel.tagId] = tagPickOption;
     this.tagPickList.push(tagPickOption);
+    this.tags.push(tagViewModel);
   }
 
   sortTagOptions() {
@@ -129,6 +132,11 @@ class TagPickerListView {
     this.tagPickList.forEach(selectableTagView => {
       selectableTagView.show();
     });
+  }
+
+  hasTagByText(tagText){
+    var existingTag = this.tags.find(tagViewModel => tagViewModel.tagText == tagText);
+    return existingTag == null ? false : true;
   }
 
   bindTagSelectionChanged(handler) {
