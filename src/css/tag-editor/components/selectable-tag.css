@@ -1,0 +1,10 @@
+.tag-select-edit-btn>svg {
+  width: auto;
+  height: 1.2em;
+  transform: translate(0.2em, 0.2em);
+  stroke-opacity: 50%;
+}
+
+.tag-select-edit-btn>svg:hover {
+  stroke-opacity: 100%;
+}

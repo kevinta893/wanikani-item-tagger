@@ -56,7 +56,7 @@ class TagEditorView {
       this.eventTagSelectionChanged.emit(tagViewModel, isSelected);
     });
 
-    this.tagPickerListView.bindTagSelectionChanged(() => {
+    this.tagPickerListView.bindTagEditClicked((tagViewModel) => {
       //TODO
     });
 

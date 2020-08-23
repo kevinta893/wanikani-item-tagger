@@ -3,7 +3,16 @@ class SelectableTagView {
   html = `
     <div class="tag-select-option">
       <div class="tag-select-text">TagText</div>
-      <div class="tag-select-edit-btn">✏️</div>
+      <div class="tag-select-edit-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+          <title>Edit Tag</title>
+          <path fill="none" d="M-1-1h1002v1002H-1z"/>
+          <g>
+            <path stroke="#fff" d="M194.001 647.085l518.777-521.307 162.188 162.188-520.786 517.81-229.146 68.446 68.967-227.137z" stroke-opacity="null" stroke-width="80" fill="none"/>
+            <path stroke="#fff" stroke-linecap="null" stroke-linejoin="null" stroke-opacity="null" stroke-width="55" fill="none" d="M584.52 255.816l158.545 158.548"/>
+          </g>
+        </svg>
+      </div>
     </div>
   `;
 
@@ -26,24 +35,24 @@ class SelectableTagView {
     this.tagViewModel = tagViewModel;
 
     var rootElement = $(el);
-    var newSelectableTag = $(this.html);
-    this.tagElem = newSelectableTag;
-    rootElement.replaceWith(newSelectableTag);
+    var tagElem = this.tagElem = $(this.html);
+    rootElement.replaceWith(tagElem);
 
-    newSelectableTag.css('background-color', tagViewModel.tagColor);
-    newSelectableTag.attr('data-tag-id', tagViewModel.tagId);
-    var isSelectedClass = tagViewModel.isSelected ? this.tagSelectedClass : this.tagNotSelectedClass;
-    newSelectableTag.addClass(isSelectedClass);
+    tagElem.css('background-color', tagViewModel.tagColor);
+    tagElem.attr('data-tag-id', tagViewModel.tagId);
+    this.setSelection(false);
 
-    var tagTextDiv = newSelectableTag.find('.tag-select-text');
+    var tagTextDiv = tagElem.find('.tag-select-text');
     tagTextDiv.text(tagViewModel.tagText);
 
     // Edit button click
-    var tagEditButton = newSelectableTag.find('.tag-select-edit-btn');
-    tagEditButton.on('click', () => this.eventTagEditClicked.emit());
+    var tagEditButton = tagElem.find('.tag-select-edit-btn');
+    tagEditButton.on('click', () => {
+      this.eventTagEditClicked.emit()
+    });
 
     // Tag Clicked
-    newSelectableTag.on('click', () => {
+    tagTextDiv.on('click', () => {
       this.toggleSelection();
     });
   }
