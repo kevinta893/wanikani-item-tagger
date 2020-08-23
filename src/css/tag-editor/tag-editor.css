@@ -1,0 +1,15 @@
+#tag-editor {
+  position: absolute;
+  background-color: #f1f1f1;
+  width: 25em;
+  box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+}
+
+.tag-editor-show {
+  display: block;
+}
+
+.tag-editor-hide {
+  display: none;
+}

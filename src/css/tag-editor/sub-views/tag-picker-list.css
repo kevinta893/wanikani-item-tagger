@@ -1,0 +1,7 @@
+#tag-picker-list {
+  overflow-y: scroll;
+  padding-top: 0.5em;
+  margin-left: 0.8em;
+  margin-bottom: 0.5em !important;
+  height: 15em;
+}
