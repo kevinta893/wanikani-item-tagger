@@ -4,8 +4,8 @@ class TagEditView {
       <div id="tag-edit-color-picker"></div>
       <input id="tag-edit-input" type="text" autocaptialize="none" autocomplete="off" spellcheck="on" autocorrect="false" maxlength="${Constants.MAX_TAG_TEXT_LENGTH}">
       <button id="tag-edit-input-submit" class="tag-ui-add-btn" disabled>Update</button>
-      <button id="tag-edit-delete" class="tag-ui-add-btn">Delete Tag</button>
-      <button id="tag-edit-cancel" class="tag-ui-add-btn">Cancel</button>
+      <button id="tag-edit-cancel" class="tag-edit-dialog-btn">Cancel</button>
+      <button id="tag-edit-delete" class="tag-edit-dialog-btn">Delete Tag</button>
     </div>
   `;
 
