@@ -8,8 +8,7 @@ class DefinitionTaggerView {
     <div class="alternative-meaning">
       <h2>Tags</h2>
       <div id="tag-list"></div>
-      <button id="tag-ui-open-input-btn" class="tag-ui-add-btn" title="Edit Tags">Edit tags</button>
-      <div id="tag-editor"></div>
+      <button id="tag-ui-open-editor-btn" class="tag-ui-add-btn" title="Edit Tags">Edit tags</button>
     </div>
   `;
   rootElement;
@@ -32,7 +31,7 @@ class DefinitionTaggerView {
     addTagFormRoot.hide();
 
     //Button that opens up the input ui
-    var tagInputButton = $('#tag-ui-open-input-btn')
+    var openTagEditorButton = $('#tag-ui-open-editor-btn')
 
     var addTagButton = $('#tag-ui-input-submit');
     addTagButton.prop('disabled', true);
@@ -40,6 +39,7 @@ class DefinitionTaggerView {
     this.tagListView = new TagListView('#tag-list');
     this.rootElement = rootElement;
 
+    $('body').append('<div id="tag-editor"></div>')
     this.tagEditorView = new TagEditorView('#tag-editor');
     this.tagEditorView.hide();
     this.tagEditorView.bindTagSelectionChanged((tagViewModel, isSelected) => {
@@ -47,8 +47,12 @@ class DefinitionTaggerView {
     });
 
     //Open up input UI when add tag button clicked
-    tagInputButton.on('click', () => {
-      this.tagEditorView.toggleEditorView();
+    openTagEditorButton.on('click', () => {
+      var position = openTagEditorButton.position();
+      var buttonHeight = openTagEditorButton.outerHeight();
+      var xPos = position.left;
+      var yPos = position.top + buttonHeight;
+      this.tagEditorView.toggleEditorView(xPos, yPos);
     });
   }
 

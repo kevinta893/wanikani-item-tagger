@@ -32,9 +32,9 @@ class TagEditorView {
     this.tagEditView = new TagEditView('#tag-edit-form');
     this.tagCreateView = new TagCreateView('#tag-create-form');
     this.tagPickerListView = new TagPickerListView('#tag-picker-list');
+    this.hide();
     this.showCreatePickMode();
 
-    this.hide();
 
     //Text changed, show relevant simular tags
     this.tagCreateView.bindTagTextInput((inputText) => {
@@ -99,12 +99,12 @@ class TagEditorView {
     this.eventTagCreated.emit(newTagViewModel);
   };
 
-  toggleEditorView() {
+  toggleEditorView(xPos, yPos) {
     var isVisible = this.isViewVisible();
     if (isVisible) {
       this.hide();
     } else {
-      this.show();
+      this.show(xPos, yPos);
     }
   }
 
@@ -112,7 +112,13 @@ class TagEditorView {
     return this.tagEditorRootElem.hasClass('tag-editor-show')
   }
 
-  show() {
+  show(xPos, yPos) {
+    xPos = xPos == null ? 0 : xPos;
+    yPos = yPos == null ? 0 : yPos;
+
+    this.tagEditorRootElem.css('left', xPos);
+    this.tagEditorRootElem.css('top', yPos);
+
     this.tagEditorRootElem.addClass('tag-editor-show');
     this.tagEditorRootElem.removeClass('tag-editor-hide');
   }

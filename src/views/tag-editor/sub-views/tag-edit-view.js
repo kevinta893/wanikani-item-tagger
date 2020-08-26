@@ -2,7 +2,10 @@ class TagEditView {
   html = `
     <div id="tag-edit-form">
       <div id="tag-edit-color-picker"></div>
-      <input id="tag-edit-input" type="text" autocaptialize="none" autocomplete="off" spellcheck="on" autocorrect="false" maxlength="${Constants.MAX_TAG_TEXT_LENGTH}">
+      <div class="tag-edit-input-group">
+        <input id="tag-edit-input" type="text" autocaptialize="none" autocomplete="off" spellcheck="on" autocorrect="false" maxlength="${Constants.MAX_TAG_TEXT_LENGTH}"/>
+        <div id="tag-edit-input-validation"></div>
+      </div>
       <button id="tag-edit-input-submit" class="tag-ui-add-btn" disabled>Update</button>
       <button id="tag-edit-cancel" class="tag-edit-dialog-btn">Cancel</button>
       <button id="tag-edit-delete" class="tag-edit-dialog-btn">Delete Tag</button>
@@ -11,6 +14,7 @@ class TagEditView {
 
   tagEditForm;
   tagEditInput;
+  tagEditInputValidationMessage;
   tagEditCancelBtn;
   tagEditDeleteBtn;
   tagEditSubmitBtn;
@@ -35,6 +39,7 @@ class TagEditView {
 
     this.tagEditForm = $('#tag-edit-form');
     this.tagEditInput = $('#tag-edit-input');
+    this.tagEditInputValidationMessage = $('#tag-edit-input-validation');
     this.tagEditCancelBtn = $('#tag-edit-cancel');
     this.tagEditDeleteBtn = $('#tag-edit-delete');
     this.tagEditSubmitBtn = $('#tag-edit-input-submit');
@@ -44,8 +49,10 @@ class TagEditView {
     this.tagEditInput.on('input', (e) => {
       var inputText = this.tagEditInput.val();
       if (inputText.length <= 0) {
+        this.showValidationError('Tag text cannot be empty.');
         this.disableEditButton();
       } else {
+        this.clearValidationError();
         this.enableEditButton();
       }
     });
@@ -59,7 +66,12 @@ class TagEditView {
     //Tag text changed
     this.tagEditInput.on('input', (e) => {
       var inputText = this.tagEditInput.val();
-      this.eventTagTextInput.emit(inputText);
+      if (inputText == this.tagViewModel.tagText) {
+        this.clearValidationError();
+        this.enableEditButton();
+      } else {
+        this.eventTagTextInput.emit(inputText);
+      }
     });
 
     //Enter button used to submit
@@ -90,7 +102,10 @@ class TagEditView {
     this.tagEditInput.val('');
     this.tagEditSubmitBtn.prop('disabled', true);
 
-    var updatedTagViewModel = this.tagViewModel;
+    var currentTagModel = this.tagViewModel;
+    var updatedTagViewModel = new TagViewModel();
+    Object.assign(updatedTagViewModel, currentTagModel);
+
     updatedTagViewModel.tagText = newTagText;
     updatedTagViewModel.tagColor = this.tagEditColorPicker.getSelectedColor();
 
@@ -103,6 +118,8 @@ class TagEditView {
     this.tagEditInput.attr('placeholder', tagViewModel.tagText);
     this.tagEditColorPicker.setSelectedColor(tagViewModel.tagColor);
 
+    this.clearValidationError();
+
     this.tagEditForm.show();
     this.tagEditInput.focus();
   }
@@ -111,18 +128,20 @@ class TagEditView {
     this.tagEditForm.hide();
   }
 
-  loadTagToEdit(tagViewModel) {
-    this.tagViewModel = tagViewModel;
-    this.tagEditInput.val(tagViewModel.tagText);
+  showValidationErrorTagExists() {
+    this.showValidationError("Tag already exists!");
   }
 
-  showValidationErrorTagExists() {
-    this.tagEditSubmitBtn.attr('title', 'This tag already exists!');
+  showValidationError(errorMessage) {
+    this.tagEditInputValidationMessage.text(errorMessage);
+    this.tagEditInputValidationMessage.show();
+    this.tagEditInput.addClass('tag-edit-input-invalid');
     this.disableEditButton();
   }
 
-  removeValidationErrorTagExists() {
-    this.tagEditSubmitBtn.removeAttr('title');
+  clearValidationError() {
+    this.tagEditInput.removeClass('tag-edit-input-invalid');
+    this.tagEditInputValidationMessage.hide();
     this.enableEditButton();
   }
 
