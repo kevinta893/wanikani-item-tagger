@@ -77,12 +77,9 @@ class TagEditorView {
       this.showCreatePickMode();
     });
 
-    //Tag edit text updated
-    this.tagEditView.bindTagTextInput((inputText) => {
-      var hasTag = this.tagPickerListView.hasTagByText(inputText);
-      if (hasTag) {
-        this.tagEditView.showValidationErrorTagExists();
-      }
+    //Add duplicate validation provider
+    this.tagEditView.addTagDuplicateValidator((tagText) => {
+      return this.tagPickerListView.hasTagByText(tagText);
     });
 
     //Dropdown loses focus, hide

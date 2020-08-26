@@ -27,6 +27,8 @@ class TagEditView {
   eventTagEditCancelled = new EventEmitter();
   eventTagTextInput = new EventEmitter();
 
+  isTagDuplicate = () => false;
+
   /**
    * Creates a tag editor view
    * @param {string} el Selector of the element to replace
@@ -47,14 +49,7 @@ class TagEditView {
 
     //Disable tag enter button when text empty
     this.tagEditInput.on('input', (e) => {
-      var inputText = this.tagEditInput.val();
-      if (inputText.length <= 0) {
-        this.showValidationError('Tag text cannot be empty.');
-        this.disableEditButton();
-      } else {
-        this.clearValidationError();
-        this.enableEditButton();
-      }
+      this.validateTagText()
     });
 
     //Trim text input
@@ -65,13 +60,7 @@ class TagEditView {
 
     //Tag text changed
     this.tagEditInput.on('input', (e) => {
-      var inputText = this.tagEditInput.val();
-      if (inputText == this.tagViewModel.tagText) {
-        this.clearValidationError();
-        this.enableEditButton();
-      } else {
-        this.eventTagTextInput.emit(inputText);
-      }
+      this.validateTagText();
     });
 
     //Enter button used to submit
@@ -91,6 +80,34 @@ class TagEditView {
     this.tagEditDeleteBtn.on('click', (e) => {
       this.eventTagDeleted.emit(this.tagViewModel);
     });
+  }
+
+  validateTagText() {
+    var tagText = this.tagEditInput.val();
+
+    //Tag text is empty
+    if (tagText.length <= 0) {
+      this.showValidationError('Tag text cannot be empty');
+      this.disableEditButton();
+      return false;
+    }
+
+    //Tag text is the same as the original
+    if (tagText == this.tagViewModel.tagText) {
+      this.clearValidationError();
+      this.disableEditButton();
+      return false;
+    }
+
+    if (this.isTagDuplicate(tagText)){
+      this.showValidationError('Tag already exists');
+      this.disableEditButton();
+      return false;
+    }
+    
+    this.clearValidationError();
+    this.enableEditButton();
+    return true;
   }
 
   tagUpdated() {
@@ -128,21 +145,15 @@ class TagEditView {
     this.tagEditForm.hide();
   }
 
-  showValidationErrorTagExists() {
-    this.showValidationError("Tag already exists!");
-  }
-
   showValidationError(errorMessage) {
     this.tagEditInputValidationMessage.text(errorMessage);
     this.tagEditInputValidationMessage.show();
     this.tagEditInput.addClass('tag-edit-input-invalid');
-    this.disableEditButton();
   }
 
   clearValidationError() {
     this.tagEditInput.removeClass('tag-edit-input-invalid');
     this.tagEditInputValidationMessage.hide();
-    this.enableEditButton();
   }
 
   disableEditButton() {
@@ -151,6 +162,16 @@ class TagEditView {
 
   enableEditButton() {
     this.tagEditSubmitBtn.prop('disabled', false);
+  }
+
+  /**
+   * Provide a function to check if a tag is duplicated
+   * @param {Func<string,bool>} duplicateValidator A function that checks
+   * if the provided tag text is duplicate or not. Returns true if duplicate,
+   * false otherwise
+   */
+  addTagDuplicateValidator(duplicateValidator){
+    this.isTagDuplicate = duplicateValidator;
   }
 
   bindTagEditCancelled(handler) {
