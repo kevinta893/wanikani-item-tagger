@@ -85,14 +85,26 @@ class TagEditorView {
       }
     });
 
-    //TODO
-    // Dropdown loses focus, hide
-    // rootElement.focusout((e) => {
-    //   var newFocusedElem = $(':focus');
-    //   if (rootElement.has(newFocusedElem).length == 0) {
-    //     this.hide();
-    //   }
-    // });
+    //Dropdown loses focus, hide
+    $(document).on('mouseup', (e) => {
+      if (!this.isViewVisible()) {
+        return;
+      }
+
+      var position = this.tagEditorRootElem.position();
+      var xPos = position.left;
+      var yPos = position.top;
+      var width = this.tagEditorRootElem.outerWidth();
+      var height = this.tagEditorRootElem.outerHeight();
+
+      var mouseX = e.pageX;
+      var mouseY = e.pageY;
+
+      // Outside div click
+      if (mouseX < xPos || mouseX > xPos + width || mouseY < yPos || mouseY > yPos + height) {
+        this.hide();
+      }
+    });
   }
 
   newTagEntered(newTagViewModel) {
@@ -109,7 +121,7 @@ class TagEditorView {
   }
 
   isViewVisible() {
-    return this.tagEditorRootElem.hasClass('tag-editor-show')
+    return this.tagEditorRootElem.hasClass('tag-editor-show');
   }
 
   show(xPos, yPos) {
@@ -118,6 +130,8 @@ class TagEditorView {
 
     this.tagEditorRootElem.css('left', xPos);
     this.tagEditorRootElem.css('top', yPos);
+
+    this.showCreatePickMode();
 
     this.tagEditorRootElem.addClass('tag-editor-show');
     this.tagEditorRootElem.removeClass('tag-editor-hide');

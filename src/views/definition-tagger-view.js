@@ -47,7 +47,7 @@ class DefinitionTaggerView {
     });
 
     //Open up input UI when add tag button clicked
-    openTagEditorButton.on('click', () => {
+    openTagEditorButton.on('click', (e) => {
       var position = openTagEditorButton.position();
       var buttonHeight = openTagEditorButton.outerHeight();
       var xPos = position.left;
