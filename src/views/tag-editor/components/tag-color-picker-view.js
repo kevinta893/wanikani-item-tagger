@@ -6,6 +6,8 @@
 class TagColorPickerView {
   colorPicker;
 
+  eventColorChanged = new EventEmitter();
+
   constructor(replaceElementSelector) {
     const defaultSwatch = [
       '#DE392E',  //red
@@ -24,6 +26,7 @@ class TagColorPickerView {
 
       palette: true,
       comparison: false,
+      lockOpacity: true,
       swatches: defaultSwatch,
       default: defaultSwatch[0],
 
@@ -43,7 +46,9 @@ class TagColorPickerView {
 
     this.colorPicker.on('change', () => {
       var pickedColor = this.colorPicker.getColor();
+      var pickedColorHex = pickedColor.toHEXA().toString();
       this.colorPicker.setColor(pickedColor.toHEXA().toString());
+      this.eventColorChanged.emit(pickedColorHex);
     });
   }
 
@@ -53,5 +58,9 @@ class TagColorPickerView {
 
   setSelectedColor(hexColor) {
     this.colorPicker.setColor(hexColor);
+  }
+
+  bindColorSelected(handler) {
+    this.eventColorChanged.addEventListener(handler);
   }
 }

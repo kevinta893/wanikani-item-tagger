@@ -35,10 +35,6 @@ class TagEditorView {
 
     //Text changed, show relevant simular tags
     this.tagCreateView.bindTagTextInput((inputText) => {
-      var hasTag = this.tagPickerListView.hasTagByText(inputText);
-      if (hasTag) {
-        this.tagCreateView.disableCreateButton();
-      }
       this.tagPickerListView.showSearchTagName(inputText);
     });
 

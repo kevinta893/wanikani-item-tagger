@@ -49,7 +49,7 @@ class TagEditView {
 
     //Disable tag enter button when text empty
     this.tagEditInput.on('input', (e) => {
-      this.validateTagText()
+      this.validateTag()
     });
 
     //Trim text input
@@ -60,7 +60,7 @@ class TagEditView {
 
     //Tag text changed
     this.tagEditInput.on('input', (e) => {
-      this.validateTagText();
+      this.validateTag();
     });
 
     //Enter button used to submit
@@ -80,9 +80,14 @@ class TagEditView {
     this.tagEditDeleteBtn.on('click', (e) => {
       this.eventTagDeleted.emit(this.tagViewModel);
     });
+
+    //Color picked
+    this.tagEditColorPicker.bindColorSelected((hexColor) => {
+      this.validateTag();
+    });
   }
 
-  validateTagText() {
+  validateTag() {
     var tagText = this.tagEditInput.val();
 
     //Tag text is empty
@@ -92,14 +97,16 @@ class TagEditView {
       return false;
     }
 
-    //Tag text is the same as the original
-    if (tagText == this.tagViewModel.tagText) {
+    //Tag text and color is the same as the original
+    var selectedColor = this.tagEditColorPicker.getSelectedColor();
+    if (tagText == this.tagViewModel.tagText && selectedColor == this.tagViewModel.tagColor) {
       this.clearValidationError();
       this.disableEditButton();
       return false;
     }
 
-    if (this.isTagDuplicate(tagText)) {
+    //Tag duplicated with another
+    if (tagText != this.tagViewModel.tagText && this.isTagDuplicate(tagText)) {
       this.showValidationError('Tag already exists');
       this.disableEditButton();
       return false;
