@@ -44,7 +44,7 @@ class TagRepository {
     return await this.dataContext.get(key);
   }
 
-  async deleteTag(tagId){
+  async deleteTag(tagId) {
     var key = this.generateStorageKey(tagId);
     await this.dataContext.delete(key);
   }

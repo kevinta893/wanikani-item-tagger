@@ -12,10 +12,7 @@ class TagEditorView {
   tagCreateView;
   tagPickerListView;
 
-  eventTagSelectionChanged = new EventEmitter();
   eventTagCreated = new EventEmitter();
-  eventTagUpdated = new EventEmitter();
-  eventTagDeleted = new EventEmitter();
 
   /**
    * Creates a tag editor view
@@ -46,14 +43,8 @@ class TagEditorView {
     });
 
     //Create form submits new tag
-    this.tagCreateView.bindTagCreated((newTagViewModel) => {
+    this.tagCreateView.bindNewTagCreated((newTagViewModel) => {
       this.tagPickerListView.showSearchTagName('');
-      this.newTagEntered(newTagViewModel);
-    });
-
-    //Tag selection changed
-    this.tagPickerListView.bindTagSelectionChanged((tagViewModel, isSelected) => {
-      this.eventTagSelectionChanged.emit(tagViewModel, isSelected);
     });
 
     //Tag picked to be edited
@@ -67,13 +58,12 @@ class TagEditorView {
     });
 
     //Tag edit delete tag
-    this.tagEditView.bindTagEditCancelled((tagViewModel) => {
-      this.eventTagDeleted.emit(tagViewModel);
+    this.tagEditView.bindTagDeleted((tagViewModel) => {
+      this.showCreatePickMode();
     });
 
     //Tag edit update
     this.tagEditView.bindTagUpdated((updatedTagViewModel) => {
-      this.eventTagUpdated.emit(updatedTagViewModel);
       this.showCreatePickMode();
     });
 
@@ -103,10 +93,6 @@ class TagEditorView {
       }
     });
   }
-
-  newTagEntered(newTagViewModel) {
-    this.eventTagCreated.emit(newTagViewModel);
-  };
 
   toggleEditorView(xPos, yPos) {
     var isVisible = this.isViewVisible();
@@ -164,18 +150,18 @@ class TagEditorView {
   }
 
   bindTagSelectionChanged(handler) {
-    this.eventTagSelectionChanged.addEventListener(handler);
+    this.tagPickerListView.bindTagSelectionChanged(handler);
   }
 
   bindNewTagCreated(handler) {
-    this.eventTagCreated.addEventListener(handler);
+    this.tagCreateView.bindNewTagCreated(handler);
   }
 
   bindTagDeleted(handler) {
-    this.eventTagDeleted.addEventListener(handler);
+    this.tagEditView.bindTagDeleted(handler);
   }
 
   bindTagUpdated(handler) {
-    this.eventTagUpdated.addEventListener(handler);
+    this.tagEditView.bindTagUpdated(handler);
   }
 }

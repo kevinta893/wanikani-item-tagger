@@ -103,6 +103,26 @@ class ReviewItemService {
     return TagModelMapper.mapDTOToViewModel(addedTagDto);
   }
 
+  async updateTag(tagViewModel){
+    var existingTagDto = await this.tagRepository.getTag(tagViewModel.tagId);
+    if (existingTagDto == null) {
+      throw new Error(`Cannot update non-existant tag. TagId=${tagViewModel.tagId}`);
+    }
+
+    var tagToUpdateDto = TagModelMapper.mapViewModelToDTO(tagViewModel);
+    await this.tagRepository.updateTag(tagToUpdateDto);
+  }
+
+  async deleteTag(tagViewModel){
+    var existingTagDto = await this.tagRepository.getTag(tagViewModel.tagId);
+    if (existingTagDto == null) {
+      throw new Error(`Cannot delete non-existant tag. TagId=${tagViewModel.tagId}`);
+    }
+
+    //Delete tag off all review items that contain it
+    console.log('Stub delete');
+  }
+
   async getAllSelectableTags(){
     var tagDtos = await this.tagRepository.getAllTags();
     var tagViewModels = tagDtos.map(tagDto => TagModelMapper.mapDTOToViewModel(tagDto));

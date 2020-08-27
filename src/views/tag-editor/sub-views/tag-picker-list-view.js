@@ -36,6 +36,7 @@ class TagPickerListView {
     this.tags = [];
     this.tagPickMap = {};
     this.tagPickList = [];
+    this.removeAllTags();
 
     var sortedTags = listOfTagViewModels.sort((tag1, tag2) => tag1.tagText.localeCompare(tag2.tagText));
     sortedTags.forEach(tagViewModel => {
@@ -126,6 +127,10 @@ class TagPickerListView {
     this.tagPickList.forEach(selectableTagView => {
       selectableTagView.setSelection(false);
     });
+  }
+
+  removeAllTags() {
+    this.tagPickerListView.find('.tag-select-option').remove();
   }
 
   showAllTags() {

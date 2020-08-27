@@ -99,12 +99,12 @@ class TagEditView {
       return false;
     }
 
-    if (this.isTagDuplicate(tagText)){
+    if (this.isTagDuplicate(tagText)) {
       this.showValidationError('Tag already exists');
       this.disableEditButton();
       return false;
     }
-    
+
     this.clearValidationError();
     this.enableEditButton();
     return true;
@@ -170,7 +170,7 @@ class TagEditView {
    * if the provided tag text is duplicate or not. Returns true if duplicate,
    * false otherwise
    */
-  addTagDuplicateValidator(duplicateValidator){
+  addTagDuplicateValidator(duplicateValidator) {
     this.isTagDuplicate = duplicateValidator;
   }
 

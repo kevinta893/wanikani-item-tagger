@@ -121,4 +121,8 @@ class DefinitionTaggerView {
   bindTagDeleted(handler) {
     this.tagEditorView.bindTagDeleted(handler);
   }
+
+  bindTagUpdated(handler) {
+    this.tagEditorView.bindTagUpdated(handler);
+  }
 }

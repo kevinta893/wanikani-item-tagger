@@ -12,12 +12,21 @@ class TaggerController {
     this.tagView.bindTagAdded((reviewItemViewModel, addedTagViewModel) => {
       this.addTag(reviewItemViewModel, addedTagViewModel);
     });
+
     this.tagView.bindTagRemoved((reviewItemViewModel, addedTagViewModel) => {
       this.removeTag(reviewItemViewModel, addedTagViewModel);
     });
 
     this.tagView.bindNewTagCreated((newTagViewModel) => {
       this.addNewTag(newTagViewModel);
+    });
+
+    this.tagView.bindTagUpdated((updatedTagViewModel) => {
+      this.updateTag(updatedTagViewModel);
+    });
+
+    this.tagView.bindTagDeleted((removedTagViewModel) => {
+      this.deleteTag(removedTagViewModel);
     });
 
     //Item changed event handler
@@ -76,6 +85,20 @@ class TaggerController {
   removeTag(reviewItemViewModel, removedTagViewModel) {
     this.reviewItemService.removeTagFromReviewItem(reviewItemViewModel, removedTagViewModel).then((updatedReviewItemViewModel) => {
       this.tagView.loadReviewItem(updatedReviewItemViewModel);
+    });
+  }
+
+  updateTag(updatedTagViewModel){
+    this.reviewItemService.updateTag(updatedTagViewModel).then(() => {
+      this.loadTags();
+      this.loadCurrentReviewItem();
+    });
+  }
+
+  deleteTag(removedTagViewModel){
+    this.reviewItemService.deleteTag(removedTagViewModel).then(() => {
+      this.loadTags();
+      this.loadCurrentReviewItem();
     });
   }
 
