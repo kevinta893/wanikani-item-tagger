@@ -50,6 +50,12 @@ class ReviewItemRepository {
     return allItems;
   }
 
+  async getAllReviewItemsWithTag(tagId) {
+    var allReviewItems = await this.dataContext.getAllValues((key) => key.indexOf(this.reviewItemsNamespace) == 0);
+    var allReviewItemsWithTag = allReviewItems.filter(reviewItemDto => reviewItemDto.tagIds.find(tId => tId == tagId) != null);
+    return allReviewItemsWithTag;
+  }
+
   generateReviewItemId(reviewItemType, reviewItemName) {
     return `${reviewItemType}/${reviewItemName}`;
   }

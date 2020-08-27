@@ -53,9 +53,6 @@ class TaggerController {
       existingReviewItemViewModel = await this.reviewItemService.createNewReviewItem(itemType, itemName);
     }
 
-    existingReviewItemViewModel.tags.forEach(tag => {
-      tag.isSelected = true;
-    });
     this.tagView.loadReviewItem(existingReviewItemViewModel);
   }
 

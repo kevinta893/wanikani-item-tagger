@@ -80,30 +80,39 @@ class ReviewItemService {
     var reviewItemViewModel = ReviewItemModelMapper.mapDTOToViewModel(reviewItemDto);
     // Get tags if any
     if (reviewItemDto.tagIds.length >= 1) {
-      var tagViewModelGetTasks = reviewItemDto.tagIds.map(tagId => {
-        return this.tagRepository.getTag(tagId);
+
+      var tagViewModelGetTasks = [];
+      reviewItemDto.tagIds.forEach(tagId => {
+        var getPromise = new Promise(async (resolve, reject) => {
+          var tag = this.tagRepository.getTag(tagId);
+          if (tag == null) {
+            reject(new Error(`Tag does not exist with id=${tagId}`))
+          }
+          resolve(tag);
+        });
+        tagViewModelGetTasks.push(getPromise);
       });
 
       var tags = await Promise.all(tagViewModelGetTasks);
-      reviewItemViewModel.tags = tags;
+      reviewItemViewModel.tags = tags.map(tagDto => TagModelMapper.mapDTOToViewModel(tagDto));
     }
 
     return reviewItemViewModel;
   }
 
-  async addNewTag(tagViewModel){
+  async addNewTag(tagViewModel) {
     var existingTagDto = await this.tagRepository.getTagByText(tagViewModel.tagText);
     if (existingTagDto != null) {
       throw new Error(`Tag already exists with text=${tagViewModel.tagText}`);
     }
-    
+
     //Tag does not exist, add
     var tagToAddDto = TagModelMapper.mapViewModelToDTO(tagViewModel);
     var addedTagDto = await this.tagRepository.putTag(tagToAddDto);
     return TagModelMapper.mapDTOToViewModel(addedTagDto);
   }
 
-  async updateTag(tagViewModel){
+  async updateTag(tagViewModel) {
     var existingTagDto = await this.tagRepository.getTag(tagViewModel.tagId);
     if (existingTagDto == null) {
       throw new Error(`Cannot update non-existant tag. TagId=${tagViewModel.tagId}`);
@@ -113,17 +122,29 @@ class ReviewItemService {
     await this.tagRepository.updateTag(tagToUpdateDto);
   }
 
-  async deleteTag(tagViewModel){
+  async deleteTag(tagViewModel) {
     var existingTagDto = await this.tagRepository.getTag(tagViewModel.tagId);
     if (existingTagDto == null) {
       throw new Error(`Cannot delete non-existant tag. TagId=${tagViewModel.tagId}`);
     }
 
     //Delete tag off all review items that contain it
-    console.log('Stub delete');
+    var allReviewItemsWithTag = await this.reviewItemRepository.getAllReviewItemsWithTag(tagViewModel.tagId);
+    var allRemoveTagTasks = [];
+    allReviewItemsWithTag.forEach(reviewItemDto => {
+      allRemoveTagTasks.push(this.removeTagFromReviewItemDto(reviewItemDto, existingTagDto.tagId));
+    });
+
+    await Promise.all(allRemoveTagTasks)
+    await this.tagRepository.deleteTag(existingTagDto.tagId);
   }
 
-  async getAllSelectableTags(){
+  async removeTagFromReviewItemDto(reviewItemDto, tagIdToRemove) {
+    reviewItemDto.tagIds = reviewItemDto.tagIds.filter((tagId) => tagId != tagIdToRemove);
+    await this.reviewItemRepository.updateReviewItem(reviewItemDto);
+  }
+
+  async getAllSelectableTags() {
     var tagDtos = await this.tagRepository.getAllTags();
     var tagViewModels = tagDtos.map(tagDto => TagModelMapper.mapDTOToViewModel(tagDto));
     return tagViewModels;
