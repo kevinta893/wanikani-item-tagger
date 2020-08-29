@@ -17,7 +17,7 @@ class TagListView {
    * @param {string} el Selector of the element to replace
    * @param {object} options Options for this tag editor
    */
-  constructor(el, options) {
+  constructor(el, options = null) {
     // Configure the UI for the definition page
     var rootElement = $(el);
     rootElement.replaceWith(this.html);
@@ -26,11 +26,11 @@ class TagListView {
   }
 
   show() {
-    tagListRoot.show();
+    this.tagListRoot.show();
   }
 
   hide() {
-    tagListRoot.hide();
+    this.tagListRoot.hide();
   }
 
   loadReviewItem(reviewItemViewModel) {
@@ -70,11 +70,5 @@ class TagListView {
 
   getCurrentReviewItemViewModel() {
     return this.reviewItemViewModel;
-  }
-
-  getCurrentTags() {
-    var currentTags = this.tagListRoot.find('.tag')
-      .map((i, tagElem) => $(tagElem).data('tag-view-model'));
-    return Array.from(currentTags);
   }
 }

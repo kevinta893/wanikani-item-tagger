@@ -20,6 +20,8 @@ class TagColorPickerView {
       '#919191',  //grey
       '#1C1C1C'   //black
     ];
+    
+    //@ts-ignore: Cannot find name Pickr
     this.colorPicker = Pickr.create({
       el: replaceElementSelector,
       theme: 'monolith',

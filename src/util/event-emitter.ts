@@ -12,15 +12,9 @@ class EventEmitter {
     this.listeners.push(handler);
   }
 
-  emit(eventData) {
+  emit(...eventData :any[]){
     this.listeners.forEach(handler => {
-      handler(eventData);
-    });
-  }
-
-  emit(eventData1, eventData2) {
-    this.listeners.forEach(handler => {
-      handler(eventData1, eventData2);
+      handler(...eventData);
     });
   }
 }

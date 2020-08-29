@@ -19,7 +19,7 @@ class TagEditorView {
    * @param {string} el Selector of the element to replace
    * @param {object} options Options for this tag editor
    */
-  constructor(el, options) {
+  constructor(el, options = null) {
     // Configure the UI for the definition page
     var rootElement = $(this.html);
     $(el).replaceWith(rootElement);

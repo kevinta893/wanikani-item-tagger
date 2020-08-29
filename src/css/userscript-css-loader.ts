@@ -7,6 +7,7 @@
 class UserscriptCSSLoader {
 
   static loadUserScriptCss(){
+    //@ts-ignore: userscriptCss variable is built during compile time
     GM_addStyle(userscriptCss);
   }
 }
