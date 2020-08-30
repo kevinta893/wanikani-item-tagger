@@ -57,7 +57,7 @@ class ReviewItemRepository {
   }
 
   generateReviewItemId(reviewItemType: ReviewItemType, reviewItemName: string): string {
-    return `${reviewItemType}/${reviewItemName}`;
+    return `${ReviewItemType[reviewItemType]}/${reviewItemName}`;
   }
 
   generateStorageKey(reviewItemId: string): string {
