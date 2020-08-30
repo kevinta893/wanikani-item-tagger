@@ -1,0 +1,25 @@
+#tag-ui-lesson {
+  position: absolute;
+  right: 2em;
+  top: 6em;
+  background: lightgrey;
+  width: 15%;
+  height: 30%;
+  border-radius: 3px;
+  z-index: 100;
+}
+
+#tag-ui-lesson .tag-ui-title {
+  font-size: x-large;
+  margin-left: 0.5em;
+}
+
+#tag-list {
+  overflow-y: scroll;
+  overflow-x: none;
+  height: 70%;
+}
+
+#tag-ui-lesson .tag-ui-add-btn {
+  margin-left: 0.5em;
+}

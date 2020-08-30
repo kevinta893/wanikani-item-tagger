@@ -33,7 +33,7 @@ class TaggerController {
     });
 
     // Load tag data to page
-    this.loadTags();
+    this.loadTagOptions();
     this.loadCurrentReviewItem();
   }
 
@@ -50,7 +50,7 @@ class TaggerController {
     this.tagView.loadReviewItem(existingReviewItemViewModel);
   }
 
-  async loadTags(): Promise<void> {
+  async loadTagOptions(): Promise<void> {
     var selectableTags = await this.reviewItemService.getAllSelectableTags();
     this.tagView.loadTagEditorOptions(selectableTags);
   }
@@ -81,14 +81,14 @@ class TaggerController {
 
   updateTag(updatedTag: TagViewModel): void {
     this.reviewItemService.updateTag(updatedTag).then(() => {
-      this.loadTags();
+      this.loadTagOptions();
       this.loadCurrentReviewItem();
     });
   }
 
   deleteTag(removedTag: TagViewModel): void {
     this.reviewItemService.deleteTag(removedTag).then(() => {
-      this.loadTags();
+      this.loadTagOptions();
       this.loadCurrentReviewItem();
     });
   }

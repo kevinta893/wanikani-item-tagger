@@ -1,154 +1,167 @@
 /**
- * Tagger UI for the lesson pages
- * These pages are unique in that the lesson and
- * the quiz are both in the same page.
- * The lesson itself also contains 3 different versions
- * of the information cards, which all need the tagger UI
+ * Tagger UI for the review page
  */
-class LessonTaggerView {
+class LessonTaggerView implements TagView {
 
-  rootElement;
-  css = ``;
-  tagListElem;
+  private readonly html = `
+    <div id="tag-ui-lesson">
+      <div class="tag-ui-title">Tags</div>
+      <div id="tag-list"></div>
+      <button id="tag-ui-open-editor-btn" class="tag-ui-add-btn" title="Edit Tags">Edit tags</button>
+    </div>
+  `;
+
+  private tagListView: TagListView;
+  private tagEditorView: TagEditorView;
+
+  private reviewItem: ReviewItemViewModel;
+
+  private readonly eventTagAdded = new EventEmitter();
+  private readonly eventTagRemoved = new EventEmitter();
+  private readonly eventTagReviewItemChanged = new EventEmitter();
 
   constructor() {
+    //Configure the UI for the definition page
+    var rootElement = $('body');
+    var tagContainer = rootElement.append(this.html);
 
-    // //Add UI to meaning section of a Lesson (before quiz)
-    // var lessonVocabInformationSelector = '#supplement-voc-meaning > div > div.pure-u-1-4.col1';
-    // var lessonKanjiInformationSelector = '#supplement-kan-meaning > div > div.pure-u-1-4.col1';
-    // var lessonRadicalInformationSelector = '#supplement-rad-name > div > div';
-    // var quizInformationSelector = '#item-info-col1'
-    // var allSelectors = [
-    //   lessonVocabInformationSelector,
-    //   lessonKanjiInformationSelector,
-    //   lessonRadicalInformationSelector,
-    //   quizInformationSelector
-    // ];
+    //Form containing tag input ui
+    var addTagFormRoot = $('#tag-ui-input-form');
+    addTagFormRoot.hide();
 
-    // var rootElement = $(allSelectors.join(','));
+    //Button that opens up the input ui
+    var openTagEditorButton = $('#tag-ui-open-editor-btn')
 
-    // var tagSection = $('<div></div>');
+    var addTagButton = $('#tag-ui-input-submit');
+    addTagButton.prop('disabled', true);
 
-    // var tagSectionTitle = $('<h2></h2>');
-    // tagSectionTitle.text('Tags');
+    this.tagListView = new TagListView('#tag-list');
 
-    // var tagList = $('<div></div>');
-    // tagList.attr('id', 'tag-list');
+    $('body').append('<div id="tag-editor"></div>')
+    this.tagEditorView = new TagEditorView('#tag-editor');
+    this.tagEditorView.hide();
+    this.tagEditorView.bindTagSelectionChanged((tagViewModel, isSelected) => {
+      this.tagSelectionChanged(tagViewModel, isSelected);
+    });
 
-    // //Input tag button
-    // var tagInputButton = $('<button></button>')
-    // tagInputButton.addClass('user-tag-add-btn');
-    // tagInputButton.attr('title', 'Add your own tags');
-    // tagInputButton.attr('style', 'display: inline-block;');
+    //Open up input UI when add tag button clicked
+    openTagEditorButton.on('click', (e) => {
+      var position = openTagEditorButton.position();
+      var buttonHeight = openTagEditorButton.outerHeight();
+      var xPos = position.left;
+      var yPos = position.top + buttonHeight;
+      this.tagEditorView.toggleEditorView(xPos, yPos);
+    });
 
-    // var addTagFormRoot = $('<div></div>');
-    // addTagFormRoot.attr('style', 'display: inline-block;');
-    // addTagFormRoot.hide();
-
-    // //Tag text input box
-    // var tagInput = $('<input></input>');
-    // tagInput.attr('type', 'text');
-    // tagInput.attr('autocaptialize', 'none');
-    // tagInput.attr('autocomplete', 'on');
-    // tagInput.attr('spellcheck', 'off');
-    // tagInput.attr('autocorrect', 'false');
-    // tagInput.addClass('noSwipe');
-    // tagInput.off();
-
-    // //Confirm button when tag entry is complete
-    // var addTagButton = $('<button></button>');
-    // addTagButton.addClass('user-tag-add-btn');
-
-    // addTagFormRoot.append(tagInput);
-    // addTagFormRoot.append(addTagButton);
-
-    // //Input tag button When clicked, opens up a textbox for tag entry
-    // tagInputButton.on('click', () => {
-    //   tagInputButton.hide();
-    //   addTagFormRoot.show();
-    //   tagInput.val('');
-
-    //   tagInput.focus();
-    // });
-
-    // //When new tag is submitted
-    // var tagEnteredCallback = () => {
-    //   var newTagText = tagInput.val();
-    //   //TODO!!!! sanitize(newTagText);
-    //   tagInput.val('');
-    //   addTagFormRoot.hide();
-    //   tagInputButton.show();
-
-    //   var newItemModel = new TagViewModel();
-    //   newItemModel.tagText = newTagText;
-
-    //   this.addTag(newItemModel);
-
-    //   //Trigger event callbacks
-    //   this.triggerTagAddEvent(newItemModel);
-    // };
-
-    // addTagButton.on('click', tagEnteredCallback);
-    // tagInput.on('keypress', function (e) {
-    //   if (e.which == 13) {
-    //     tagEnteredCallback();
-    //   }
-    // });
-
-    // var ulButtonParent = $('<div></div>');
-    // ulButtonParent.append(tagInputButton);
-    // ulButtonParent.append(addTagFormRoot);
-
-    // tagSection.append(tagSectionTitle);
-    // tagSection.append(tagList);
-    // tagSection.append(ulButtonParent);
-
-    // this.tagListElem = tagList;
-    // rootElement.append(tagSection);
-
-    // this.rootElement = rootElement;
-
-    //Every time item changes, update the tag list
-    // $.jStorage.listenKeyChange('currentItem', itemChangedEvent);
-    // $.jStorage.listenKeyChange('l/currentLesson', itemChangedEvent);
+    //Review item changed event
+    var itemChangedHandler = (key) => {
+      var rawWanikaniItem = this.getCurrentReviewItem();
+      if (rawWanikaniItem == null) {
+        // Sometimes the review item is not ready
+        return;
+      }
+      var wanikaniItem = this.convertCurrentReviewItem(rawWanikaniItem);
+      this.eventTagReviewItemChanged.emit(wanikaniItem);
+    };
+    $.jStorage.listenKeyChange('l/currentQuizItem', itemChangedHandler);
+    $.jStorage.listenKeyChange('l/currentLesson', itemChangedHandler);
+    $.jStorage.listenKeyChange('l/quizActive', itemChangedHandler);
   }
-/*
-  getCurrentWkItemData() {
-    // TODO Move this to a "data provider" kind of class
-    // For fetching raw data off the current page
-    //Gather data from page
-    var pageUrl = window.location.href;
-    var currentItem;
-    if (pageUrl.indexOf('lesson') >= 0) {
-      //In lesson section
-      currentItem = $.jStorage.get('l/currentLesson');
-    }
-    else {
-      //In quiz section 
-      currentItem = $.jStorage.get('l/currentQuizItem');
+
+  private isQuizActive(): boolean {
+    return $.jStorage.get('l/quizActive');
+  }
+
+  private getCurrentReviewItem(): any {
+    var isQuizActive = this.isQuizActive();
+    if (isQuizActive) {
+      return $.jStorage.get('l/currentQuizItem');
     }
 
+    return $.jStorage.get('l/currentLesson');
+  }
+
+  private convertCurrentReviewItem(currentReviewItem: any): WanikaniItemDataModel {
     var wkItemData = new WanikaniItemDataModel();
 
     //Determine item type
-    var itemType = '';
-    var itemName = '';
-    if (currentItem.hasOwnProperty('voc')) {
-      itemType = ItemTypes.Vocabulary;
-      itemName = currentItem.voc;
+    var itemType: ReviewItemType;
+    var itemName: string;
+    if (currentReviewItem.hasOwnProperty('voc')) {
+      itemType = ReviewItemType.Vocabulary;
+      itemName = currentReviewItem.voc;
     }
-    else if (currentItem.hasOwnProperty('kan')) {
-      itemType = ItemTypes.Kanji;
-      itemName = currentItem.kan;
+    else if (currentReviewItem.hasOwnProperty('kan')) {
+      itemType = ReviewItemType.Kanji;
+      itemName = currentReviewItem.kan;
     }
-    else if (currentItem.hasOwnProperty('rad')) {
-      itemType = ItemTypes.Radical;
-      itemName = currentItem.rad;
+    else if (currentReviewItem.hasOwnProperty('rad')) {
+      itemType = ReviewItemType.Radical;
+      itemName = currentReviewItem.rad;
     }
 
     wkItemData.itemName = itemName;
     wkItemData.itemType = itemType;
 
     return wkItemData;
-  }*/
+  }
+
+  getCurrentWkItemData(): WanikaniItemDataModel {
+    var currentItem = this.getCurrentReviewItem()
+    return this.convertCurrentReviewItem(currentItem);
+  }
+
+  tagSelectionChanged(selectedTag: TagViewModel, isSelected: boolean): void {
+    var reviewItem = this.reviewItem;
+
+    //Add or remove tags if they exist
+    if (isSelected) {
+      this.eventTagAdded.emit(reviewItem, selectedTag);
+    } else {
+      this.eventTagRemoved.emit(reviewItem, selectedTag);
+    }
+  }
+
+  getReviewItem(): ReviewItemViewModel {
+    return this.reviewItem;
+  }
+
+  loadReviewItem(reviewItem: ReviewItemViewModel): void {
+    this.reviewItem = reviewItem;
+
+    this.tagListView.loadReviewItem(reviewItem);
+    this.tagEditorView.loadReviewItemSelection(reviewItem);
+  }
+
+  loadTagEditorOptions(listOfTags: Array<TagViewModel>): void {
+    this.tagEditorView.loadTagOptions(listOfTags);
+  }
+
+  addTagEditorTagOption(tagOption: TagViewModel): void {
+    this.tagEditorView.addTagPickOption(tagOption);
+  }
+
+  bindTagAdded(handler: (reviewItem: ReviewItemViewModel, addedTag: TagViewModel) => void): void {
+    this.eventTagAdded.addEventListener(handler);
+  }
+
+  bindTagRemoved(handler: (reviewItem: ReviewItemViewModel, removedTag: TagViewModel) => void): void {
+    this.eventTagRemoved.addEventListener(handler);
+  }
+
+  bindReviewItemChanged(handler: (wkItemData: WanikaniItemDataModel) => void): void {
+    this.eventTagReviewItemChanged.addEventListener(handler);
+  }
+
+  bindNewTagCreated(handler: (newTag: TagViewModel) => void): void {
+    this.tagEditorView.bindNewTagCreated(handler);
+  }
+
+  bindTagDeleted(handler: (deletedTag: TagViewModel) => void): void {
+    this.tagEditorView.bindTagDeleted(handler);
+  }
+
+  bindTagUpdated(handler: (updatedTag: TagViewModel) => void): void {
+    this.tagEditorView.bindTagUpdated(handler);
+  }
 }
