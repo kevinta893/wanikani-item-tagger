@@ -1,0 +1,20 @@
+#tag-ui-review {
+  position: fixed;
+  right: 2em;
+  top: 6em;
+  background: lightgrey;
+  width: 15%;
+  height: 30%;
+  border-radius: 3px;
+  z-index: 100;
+}
+
+#tag-ui-review .tag-ui-title {
+  font-size: x-large;
+}
+
+#tag-list {
+  overflow-y: scroll;
+  overflow-x: none;
+  height: 70%;
+}

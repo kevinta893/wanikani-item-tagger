@@ -29,9 +29,7 @@ class TaggerController {
 
     //Item changed event handler
     this.tagView.bindReviewItemChanged((wkItemData) => {
-      this.reviewItemService.getReviewItem(wkItemData.itemType, wkItemData.itemName).then((reviewItemViewModel) => {
-        this.tagView.loadReviewItem(reviewItemViewModel);
-      });
+      this.loadCurrentReviewItem();
     });
 
     // Load tag data to page

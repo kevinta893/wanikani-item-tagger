@@ -1,135 +1,152 @@
 /**
  * Tagger UI for the review page
  */
-class ReviewTaggerView {
+class ReviewTaggerView implements TagView {
 
-  rootElement;
-  html = `
-    <div class="tag-ui">
-      <h2 class="tag-ui-h2">Tags</h2>
-      <div>
-        <div id="tag-list"></div>
-        <button id="tag-ui-open-tag-input-btn" class="tag-ui-add-btn" title="Add your own tags" style="display: inline-block;">+</button>
-      <div id="tag-ui-add-tag-form-root" style="display: none;">
-        <input id="tag-ui-tag-input" type="text" autocaptialize="none" autocomplete="on" spellcheck="off" autocorrect="false">
-        <button id="tag-ui-add-tag-btn" class="user-tag-add-btn">+</button>
-      </div>
+  private readonly html = `
+    <div id="tag-ui-review">
+      <div class="tag-ui-title">Tags</div>
+      <div id="tag-list"></div>
+      <button id="tag-ui-open-editor-btn" class="tag-ui-add-btn" title="Edit Tags">Edit tags</button>
     </div>
-    `;
-  css = `
-    .tag-ui-h2{
-      text-align: left;
-    }
-    .tag-ui{
-      position: absolute;
-      top: 75px;
-      right: 20px;
-      padding: 0px 5px 2px;
-      -webkit-border-radius: 3px;
-      -moz-border-radius: 3px;
-      border-radius: 3px;
-      z-index: 99;
-      opacity: 0.8;
-      background-color: darkgray;
-    }
-    .tag-ui-add-btn{
-      display: inline-block;
-    }
-    .tag {
-      cursor: pointer;
-      display: inline-block;
-      padding-left: 0.5em;
-      padding-right: 0.5em;
-      margin-right: 0.5em;
-      margin-bottom: 0.5em;
-      background-color: #AA00FF;
-      color: #eee;
-      -webkit-border-radius: 3px;
-      -moz-border-radius: 3px;
-      border-radius: 3px;
-    }
-    `;
-  tagListElem;
+  `;
+
+  private tagListView: TagListView;
+  private tagEditorView: TagEditorView;
+
+  private reviewItem: ReviewItemViewModel;
+
+  private readonly eventTagAdded = new EventEmitter();
+  private readonly eventTagRemoved = new EventEmitter();
+  private readonly eventTagReviewItemChanged = new EventEmitter();
 
   constructor() {
-    // GM_addStyle(this.css);
+    //Configure the UI for the definition page
+    var rootElement = $('body');
+    var tagContainer = rootElement.append(this.html);
 
-    // //Add UI to meaning section of a Lesson (before quiz)
-    // var rootElement = $('#question');
-    // rootElement.append(this.html);
+    //Form containing tag input ui
+    var addTagFormRoot = $('#tag-ui-input-form');
+    addTagFormRoot.hide();
 
-    // var tagList = $('#tag-list');
-    // var tagInput = $('#tag-ui-tag-input');
+    //Button that opens up the input ui
+    var openTagEditorButton = $('#tag-ui-open-editor-btn')
 
-    // //Input tag button When clicked, opens up a textbox for tag entry
-    // var tagInputButton = $('#tag-ui-open-tag-input-btn');
-    // var addTagFormRoot = $('#tag-ui-add-tag-form-root')
-    // tagInputButton.on('click', () => {
-    //   tagInputButton.hide();
-    //   addTagFormRoot.show();
-    //   tagInput.val('');
+    var addTagButton = $('#tag-ui-input-submit');
+    addTagButton.prop('disabled', true);
 
-    //   tagInput.focus();
-    // });
+    this.tagListView = new TagListView('#tag-list');
 
-    // //When new tag is submitted
-    // var tagEnteredCallback = () => {
-    //   var newTagText = tagInput.val();
-    //   //TODO!!!! sanitize(newTagText);
-    //   tagInput.val('');
-    //   addTagFormRoot.hide();
-    //   tagInputButton.show();
+    $('body').append('<div id="tag-editor"></div>')
+    this.tagEditorView = new TagEditorView('#tag-editor');
+    this.tagEditorView.hide();
+    this.tagEditorView.bindTagSelectionChanged((tagViewModel, isSelected) => {
+      this.tagSelectionChanged(tagViewModel, isSelected);
+    });
 
-    //   var newItemModel = new TagViewModel();
-    //   newItemModel.tagText = newTagText;
+    //Open up input UI when add tag button clicked
+    openTagEditorButton.on('click', (e) => {
+      var position = openTagEditorButton.position();
+      var buttonHeight = openTagEditorButton.outerHeight();
+      var xPos = position.left;
+      var yPos = position.top + buttonHeight;
+      this.tagEditorView.toggleEditorView(xPos, yPos);
+    });
 
-    //   this.addTag(newItemModel);
-
-    //   //Trigger event callbacks
-    //   this.triggerTagAddEvent(newItemModel);
-    // };
-
-    // //Button to confirm button when tag entry is complete
-    // var addTagButton = $('#tag-ui-add-tag-btn');
-    // addTagButton.on('click', tagEnteredCallback);
-    // tagInput.on('keypress', function (e) {
-    //   if (e.which == 13) {
-    //     tagEnteredCallback();
-    //   }
-    // });
-
-    // this.tagListElem = tagList;
-    // this.rootElement = rootElement;
+    //Review item changed event
+    var itemChangedHandler = (key) => {
+      var rawWanikaniItem = this.getCurrentReviewItem();
+      var wanikaniItem = this.convertCurrentReviewItem(rawWanikaniItem);
+      this.eventTagReviewItemChanged.emit(wanikaniItem);
+    };
+    $.jStorage.listenKeyChange('currentItem', itemChangedHandler);
   }
 
-/*
-  getCurrentWkItemData() {
-    // TODO Move this to a "data provider" kind of class
-    // For fetching raw data off the current page
-    //Gather data from page
-    var currentItem = $.jStorage.get("currentItem");
+  private getCurrentReviewItem(): any {
+    return $.jStorage.get('currentItem');
+  }
 
+  private convertCurrentReviewItem(currentReviewItem: any): WanikaniItemDataModel {
     var wkItemData = new WanikaniItemDataModel();
 
     //Determine item type
-    var itemType = '';
-    var itemName = '';
-    if (currentItem.hasOwnProperty('voc')) {
-      itemType = ItemTypes.Vocabulary;
-      itemName = currentItem.voc;
+    var itemType: ReviewItemType;
+    var itemName: string;
+    if (currentReviewItem.hasOwnProperty('voc')) {
+      itemType = ReviewItemType.Vocabulary;
+      itemName = currentReviewItem.voc;
     }
-    else if (currentItem.hasOwnProperty('kan')) {
-      itemType = ItemTypes.Kanji;
-      itemName = currentItem.kan;
+    else if (currentReviewItem.hasOwnProperty('kan')) {
+      itemType = ReviewItemType.Kanji;
+      itemName = currentReviewItem.kan;
     }
-    else if (currentItem.hasOwnProperty('rad')) {
-      itemType = ItemTypes.Radical;
-      itemName = currentItem.rad;
+    else if (currentReviewItem.hasOwnProperty('rad')) {
+      itemType = ReviewItemType.Radical;
+      itemName = currentReviewItem.rad;
     }
 
     wkItemData.itemName = itemName;
     wkItemData.itemType = itemType;
 
     return wkItemData;
-  }*/
+  }
+
+  getCurrentWkItemData(): WanikaniItemDataModel {
+    var currentItem = this.getCurrentReviewItem()
+    return this.convertCurrentReviewItem(currentItem);
+  }
+
+  tagSelectionChanged(selectedTag: TagViewModel, isSelected: boolean): void {
+    var reviewItem = this.reviewItem;
+
+    //Add or remove tags if they exist
+    if (isSelected) {
+      this.eventTagAdded.emit(reviewItem, selectedTag);
+    } else {
+      this.eventTagRemoved.emit(reviewItem, selectedTag);
+    }
+  }
+
+  getReviewItem(): ReviewItemViewModel {
+    return this.reviewItem;
+  }
+
+  loadReviewItem(reviewItem: ReviewItemViewModel): void {
+    this.reviewItem = reviewItem;
+
+    this.tagListView.loadReviewItem(reviewItem);
+    this.tagEditorView.loadReviewItemSelection(reviewItem);
+  }
+
+  loadTagEditorOptions(listOfTags: Array<TagViewModel>): void {
+    this.tagEditorView.loadTagOptions(listOfTags);
+  }
+
+  addTagEditorTagOption(tagOption: TagViewModel): void {
+    this.tagEditorView.addTagPickOption(tagOption);
+  }
+
+  bindTagAdded(handler: (reviewItem: ReviewItemViewModel, addedTag: TagViewModel) => void): void {
+    this.eventTagAdded.addEventListener(handler);
+  }
+
+  bindTagRemoved(handler: (reviewItem: ReviewItemViewModel, removedTag: TagViewModel) => void): void {
+    this.eventTagRemoved.addEventListener(handler);
+  }
+
+  bindReviewItemChanged(handler: (wkItemData: WanikaniItemDataModel) => void): void {
+    this.eventTagReviewItemChanged.addEventListener(handler);
+  }
+
+  bindNewTagCreated(handler: (newTag: TagViewModel) => void): void {
+    this.tagEditorView.bindNewTagCreated(handler);
+  }
+
+  bindTagDeleted(handler: (deletedTag: TagViewModel) => void): void {
+    this.tagEditorView.bindTagDeleted(handler);
+  }
+
+  bindTagUpdated(handler: (updatedTag: TagViewModel) => void): void {
+    this.tagEditorView.bindTagUpdated(handler);
+  }
 }

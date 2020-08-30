@@ -11,7 +11,7 @@ class DefinitionTaggerView implements TagView {
       <button id="tag-ui-open-editor-btn" class="tag-ui-add-btn" title="Edit Tags">Edit tags</button>
     </div>
   `;
-  private rootElement;
+
   private tagListView: TagListView;
   private tagEditorView: TagEditorView;
 
@@ -37,7 +37,6 @@ class DefinitionTaggerView implements TagView {
     addTagButton.prop('disabled', true);
 
     this.tagListView = new TagListView('#tag-list');
-    this.rootElement = rootElement;
 
     $('body').append('<div id="tag-editor"></div>')
     this.tagEditorView = new TagEditorView('#tag-editor');

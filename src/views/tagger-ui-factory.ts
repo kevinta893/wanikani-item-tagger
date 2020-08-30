@@ -8,8 +8,7 @@ class TaggerUiFactory {
     var pageUrl = window.location.href;
     if (pageUrl.indexOf('wanikani.com/review/session') >= 0) {
       // Review
-      throw new Error('Lesson page not yet supported');
-      //return new ReviewTaggerView();
+      return new ReviewTaggerView();
     } else if (pageUrl.indexOf('wanikani.com/lesson/session') >= 0) {
       // Lesson
       throw new Error('Lesson page not yet supported');
