@@ -39,7 +39,7 @@ class ReviewItemRepository {
     return newReviewItem;
   }
 
-  async getReviewItem(reviewItemType: ItemTypes, reviewItemName: string): Promise<ReviewItemDTO> {
+  async getReviewItem(reviewItemType: ReviewItemType, reviewItemName: string): Promise<ReviewItemDTO> {
     var reviewItemId = this.generateReviewItemId(reviewItemType, reviewItemName);
     var key = this.generateStorageKey(reviewItemId);
     return await this.dataContext.get(key);
@@ -56,7 +56,7 @@ class ReviewItemRepository {
     return allReviewItemsWithTag;
   }
 
-  generateReviewItemId(reviewItemType: ItemTypes, reviewItemName: string): string {
+  generateReviewItemId(reviewItemType: ReviewItemType, reviewItemName: string): string {
     return `${reviewItemType}/${reviewItemName}`;
   }
 

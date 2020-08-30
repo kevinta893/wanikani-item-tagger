@@ -4,5 +4,5 @@
  */
 class WanikaniItemDataModel {
   itemName: string;
-  itemType: ItemTypes;
+  itemType: ReviewItemType;
 }

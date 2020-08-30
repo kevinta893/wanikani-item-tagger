@@ -29,7 +29,7 @@ class ReviewItemService {
    * @param {string} itemType 
    * @param {string} itemName 
    */
-  async createNewReviewItem(itemType: ItemTypes, itemName: string): Promise<ReviewItemViewModel> {
+  async createNewReviewItem(itemType: ReviewItemType, itemName: string): Promise<ReviewItemViewModel> {
     // Does not exist create and save
     var newReviewItemDto = new ReviewItemDTO();
     newReviewItemDto.itemType = itemType;
@@ -71,7 +71,7 @@ class ReviewItemService {
     return reviewItem;
   }
 
-  async getReviewItem(itemType: ItemTypes, itemName: string): Promise<ReviewItemViewModel> {
+  async getReviewItem(itemType: ReviewItemType, itemName: string): Promise<ReviewItemViewModel> {
     var reviewItemDto = await this.reviewItemRepository.getReviewItem(itemType, itemName);
     if (reviewItemDto == null) {
       return null;

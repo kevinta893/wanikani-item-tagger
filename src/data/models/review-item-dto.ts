@@ -1,6 +1,6 @@
 class ReviewItemDTO {
   itemId: string;
-  itemType: ItemTypes;
+  itemType: ReviewItemType;
   itemName: string;
 
   tagIds: number[] = [];
