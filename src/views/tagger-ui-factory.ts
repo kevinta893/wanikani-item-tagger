@@ -3,16 +3,17 @@
  * that the script is current on
  */
 class TaggerUiFactory {
-  static createTaggerUi() {
+  static createTaggerUi(): TagView {
     //Add UI (depending on page)
     var pageUrl = window.location.href;
     if (pageUrl.indexOf('wanikani.com/review/session') >= 0) {
       // Review
-      return new ReviewTaggerView();
+      throw new Error('Lesson page not yet supported');
+      //return new ReviewTaggerView();
     } else if (pageUrl.indexOf('wanikani.com/lesson/session') >= 0) {
       // Lesson
       throw new Error('Lesson page not yet supported');
-      return new LessonTaggerView();
+      //return new LessonTaggerView();
     } else if (
       pageUrl.indexOf('wanikani.com/radicals') >= 0 ||
       pageUrl.indexOf('wanikani.com/kanji') >= 0 ||

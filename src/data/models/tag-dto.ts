@@ -1,5 +1,5 @@
 class TagDTO {
-  tagId = 0;
-  tagText = '';
-  tagColor = '';
+  tagId: number;
+  tagText: string;
+  tagColor: string;
 }

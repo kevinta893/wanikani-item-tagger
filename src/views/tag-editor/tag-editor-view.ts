@@ -1,5 +1,5 @@
 class TagEditorView {
-  html = `
+  private readonly html = `
     <div id="tag-editor">
       <div id="tag-edit-form"></div>
       <div id="tag-create-form"></div>
@@ -7,19 +7,19 @@ class TagEditorView {
     </div>
   `;
 
-  tagEditorRootElem;
-  tagEditView;
-  tagCreateView;
-  tagPickerListView;
+  private tagEditorRootElem;
+  private tagEditView: TagEditView;
+  private tagCreateView: TagCreateView;
+  private tagPickerListView: TagPickerListView;
 
-  eventTagCreated = new EventEmitter();
+  private readonly eventTagCreated = new EventEmitter();
 
   /**
    * Creates a tag editor view
    * @param {string} el Selector of the element to replace
-   * @param {object} options Options for this tag editor
+   * @param {any} options Options for this tag editor
    */
-  constructor(el, options = null) {
+  constructor(el: string, options = null) {
     // Configure the UI for the definition page
     var rootElement = $(this.html);
     $(el).replaceWith(rootElement);
@@ -39,13 +39,13 @@ class TagEditorView {
     });
 
     //Create form submits new tag
-    this.tagCreateView.bindNewTagCreated((newTagViewModel) => {
+    this.tagCreateView.bindNewTagCreated((newTag) => {
       this.tagPickerListView.showSearchTagName('');
     });
 
     //Tag picked to be edited
-    this.tagPickerListView.bindTagEditClicked((tagViewModel) => {
-      this.showEditMode(tagViewModel);
+    this.tagPickerListView.bindTagEditClicked((editedTag) => {
+      this.showEditMode(editedTag);
     });
 
     //Tag edit cancelled
@@ -54,12 +54,12 @@ class TagEditorView {
     });
 
     //Tag edit delete tag
-    this.tagEditView.bindTagDeleted((tagViewModel) => {
+    this.tagEditView.bindTagDeleted((deletedTag) => {
       this.showCreatePickMode();
     });
 
     //Tag edit update
-    this.tagEditView.bindTagUpdated((updatedTagViewModel) => {
+    this.tagEditView.bindTagUpdated((updatedTag) => {
       this.showCreatePickMode();
     });
 
@@ -90,7 +90,7 @@ class TagEditorView {
     });
   }
 
-  toggleEditorView(xPos, yPos) {
+  toggleEditorView(xPos: number, yPos: number): void {
     var isVisible = this.isViewVisible();
     if (isVisible) {
       this.hide();
@@ -99,11 +99,11 @@ class TagEditorView {
     }
   }
 
-  isViewVisible() {
+  isViewVisible(): boolean {
     return this.tagEditorRootElem.hasClass('tag-editor-show');
   }
 
-  show(xPos, yPos) {
+  show(xPos: number, yPos: number): void {
     xPos = xPos == null ? 0 : xPos;
     yPos = yPos == null ? 0 : yPos;
 
@@ -116,48 +116,48 @@ class TagEditorView {
     this.tagEditorRootElem.removeClass('tag-editor-hide');
   }
 
-  hide() {
+  hide(): void {
     this.tagEditorRootElem.addClass('tag-editor-hide');
     this.tagEditorRootElem.removeClass('tag-editor-show');
   }
 
-  loadTagOptions(listOfTagViewModels) {
-    this.tagPickerListView.loadTagOptions(listOfTagViewModels);
+  loadTagOptions(listOfTags: Array<TagViewModel>): void {
+    this.tagPickerListView.loadTagOptions(listOfTags);
   }
 
-  addTagPickOption(tagViewModel) {
-    this.tagPickerListView.addTagPickOption(tagViewModel);
+  addTagPickOption(tagOption: TagViewModel): void {
+    this.tagPickerListView.addTagPickOption(tagOption);
   }
 
-  loadReviewItemSelection(reviewItemViewModel) {
-    this.tagPickerListView.loadReviewItemSelection(reviewItemViewModel);
+  loadReviewItemSelection(reviewItem: ReviewItemViewModel): void {
+    this.tagPickerListView.loadReviewItemSelection(reviewItem);
   }
 
-  showCreatePickMode() {
+  showCreatePickMode(): void {
     this.tagEditView.hide();
     this.tagCreateView.show();
     this.tagPickerListView.show();
   }
 
-  showEditMode(tagViewModel) {
+  showEditMode(tagToEdit: TagViewModel): void {
     this.tagPickerListView.hide();
     this.tagCreateView.hide();
-    this.tagEditView.show(tagViewModel);
+    this.tagEditView.show(tagToEdit);
   }
 
-  bindTagSelectionChanged(handler) {
+  bindTagSelectionChanged(handler: (selectedTag: TagViewModel, isSelected: boolean) => void): void {
     this.tagPickerListView.bindTagSelectionChanged(handler);
   }
 
-  bindNewTagCreated(handler) {
+  bindNewTagCreated(handler: (newTag: TagViewModel) => void): void {
     this.tagCreateView.bindNewTagCreated(handler);
   }
 
-  bindTagDeleted(handler) {
+  bindTagDeleted(handler: (deletedTag: TagViewModel) => void): void {
     this.tagEditView.bindTagDeleted(handler);
   }
 
-  bindTagUpdated(handler) {
+  bindTagUpdated(handler: (updatedTag: TagViewModel) => void): void {
     this.tagEditView.bindTagUpdated(handler);
   }
 }

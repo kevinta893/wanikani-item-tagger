@@ -1,19 +1,19 @@
 class TagPickerListView {
-  html = `
+  private readonly html = `
     <div id="tag-picker-list"></div>
   `;
-  newPickableTagHtml = `
+  private readonly newPickableTagHtml = `
     <div></div>
   `;
 
-  tagPickerListView;
+  private tagPickerListView;
 
-  tags = [];
-  tagPickMap = {};
-  tagPickList = [];
+  private tags: TagViewModel[] = [];
+  private tagPickMap = {};
+  private tagPickList: SelectableTagView[] = [];
 
-  eventTagSelectionChanged = new EventEmitter();
-  eventTagEditClicked = new EventEmitter();
+  private readonly eventTagSelectionChanged = new EventEmitter();
+  private readonly eventTagEditClicked = new EventEmitter();
 
   constructor(el, options = null) {
     var rootElement = $(this.html);
@@ -22,50 +22,50 @@ class TagPickerListView {
     this.tagPickerListView = rootElement;
   }
 
-  loadReviewItemSelection(reviewItemViewModel) {
+  loadReviewItemSelection(reviewItem): void {
     this.deselectAllTags();
 
-    reviewItemViewModel.tags.forEach(tagViewModel => {
+    reviewItem.tags.forEach(tagViewModel => {
       this.tagPickMap[tagViewModel.tagId].setSelection(true);
     });
 
     this.sortTagOptions();
   }
 
-  loadTagOptions(listOfTagViewModels) {
+  loadTagOptions(listOfTags): void {
     this.tags = [];
     this.tagPickMap = {};
     this.tagPickList = [];
     this.removeAllTags();
 
-    var sortedTags = listOfTagViewModels.sort((tag1, tag2) => tag1.tagText.localeCompare(tag2.tagText));
+    var sortedTags = listOfTags.sort((tag1, tag2) => tag1.tagText.localeCompare(tag2.tagText));
     sortedTags.forEach(tagViewModel => {
       this.addTagPickOption(tagViewModel);
     });
   }
 
-  addTagPickOption(tagViewModel) {
+  addTagPickOption(tag): void {
     // Create dom to attach to
     var newTagPickOption = $(this.newPickableTagHtml);
-    var newTagPickId = `tag-option-${tagViewModel.tagId}`;
+    var newTagPickId = `tag-option-${tag.tagId}`;
     newTagPickOption.attr('id', newTagPickId);
     this.tagPickerListView.append(newTagPickOption);
 
     // Create tag picker option
-    var tagPickOption = new SelectableTagView(`#${newTagPickId}`, tagViewModel);
-    tagPickOption.bindTagSelectChanged((tagViewModel, isSelected) => {
-      this.eventTagSelectionChanged.emit(tagViewModel, isSelected);
+    var tagPickOption = new SelectableTagView(`#${newTagPickId}`, tag);
+    tagPickOption.bindTagSelectChanged((selectedTag, isSelected) => {
+      this.eventTagSelectionChanged.emit(selectedTag, isSelected);
     });
-    tagPickOption.bindTagEditClicked((tagViewModel) => {
-      this.eventTagEditClicked.emit(tagViewModel);
+    tagPickOption.bindTagEditClicked((editedTag) => {
+      this.eventTagEditClicked.emit(editedTag);
     });
 
-    this.tagPickMap[tagViewModel.tagId] = tagPickOption;
+    this.tagPickMap[tag.tagId] = tagPickOption;
     this.tagPickList.push(tagPickOption);
-    this.tags.push(tagViewModel);
+    this.tags.push(tag);
   }
 
-  sortTagOptions() {
+  sortTagOptions(): void {
     var sortedPickerList = this.tagPickerListView.find('.tag-select-option').sort((tagElem1, tagElem2) => {
       var tagId1 = $(tagElem1).attr('data-tag-id');
       var tagId2 = $(tagElem2).attr('data-tag-id');
@@ -95,15 +95,15 @@ class TagPickerListView {
     });
   }
 
-  showSearchTagName(tagText) {
+  showSearchTagName(tagText): void {
     if (StringUtil.isNullOrEmpty(tagText)) {
       this.showAllTags();
     }
 
     //Show selected tags
     this.tagPickList.forEach(selectableTagView => {
-      var tagViewModel = selectableTagView.getTagViewModel();
-      if (this.isSimular(tagViewModel.tagText, tagText)) {
+      var selectedTag = selectableTagView.getTagViewModel();
+      if (this.isSimular(selectedTag.tagText, tagText)) {
         selectableTagView.show();
       } else {
         selectableTagView.hide();
@@ -116,47 +116,47 @@ class TagPickerListView {
    * @param {string} text 
    * @param {string} substring 
    */
-  isSimular(text, searchString) {
+  isSimular(text, searchString): boolean {
     if (text.indexOf(searchString) >= 0) {
       return true;
     }
     return false;
   }
 
-  deselectAllTags() {
+  deselectAllTags(): void {
     this.tagPickList.forEach(selectableTagView => {
       selectableTagView.setSelection(false);
     });
   }
 
-  removeAllTags() {
+  removeAllTags(): void {
     this.tagPickerListView.find('.tag-select-option').remove();
   }
 
-  showAllTags() {
+  showAllTags(): void {
     this.tagPickList.forEach(selectableTagView => {
       selectableTagView.show();
     });
   }
 
-  hasTagByText(tagText){
-    var existingTag = this.tags.find(tagViewModel => tagViewModel.tagText == tagText);
+  hasTagByText(tagText): boolean {
+    var existingTag = this.tags.find(existingTag => existingTag.tagText == tagText);
     return existingTag == null ? false : true;
   }
 
-  show(){
+  show(): void {
     this.tagPickerListView.show();
   }
 
-  hide(){
+  hide(): void {
     this.tagPickerListView.hide();
   }
 
-  bindTagSelectionChanged(handler) {
+  bindTagSelectionChanged(handler: (selectedTag: TagViewModel, isSelected: boolean) => void): void {
     this.eventTagSelectionChanged.addEventListener(handler);
   }
 
-  bindTagEditClicked(handler) {
+  bindTagEditClicked(handler: (updatedTag: TagViewModel) => void): void {
     this.eventTagEditClicked.addEventListener(handler);
   }
 }

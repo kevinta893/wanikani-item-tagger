@@ -1,15 +1,15 @@
 class ReviewItemService {
-  reviewItemRepository;
-  tagRepository;
+  private readonly reviewItemRepository: ReviewItemRepository;
+  private readonly tagRepository: TagRepository;
 
-  constructor(reviewItemRepository, tagRepository) {
+  constructor(reviewItemRepository: ReviewItemRepository, tagRepository: TagRepository) {
     this.reviewItemRepository = reviewItemRepository;
     this.tagRepository = tagRepository;
   }
 
-  async putReviewItem(reviewItemViewModel) {
-    var reviewItemDto = ReviewItemModelMapper.mapViewModelToDTO(reviewItemViewModel);
-    var tagDtos = reviewItemViewModel.tags.map(tagViewModel => TagModelMapper.mapViewModelToDTO(tagViewModel));
+  async putReviewItem(newReviewItem: ReviewItemViewModel): Promise<ReviewItemViewModel> {
+    var reviewItemDto = ReviewItemModelMapper.mapViewModelToDTO(newReviewItem);
+    var tagDtos = newReviewItem.tags.map(tagViewModel => TagModelMapper.mapViewModelToDTO(tagViewModel));
 
     var putTagTasks = [];
     tagDtos.forEach(tagDto => {
@@ -18,10 +18,10 @@ class ReviewItemService {
 
     await Promise.all(putTagTasks);
 
-    var updatedReviewItem = await this.reviewItemRepository.putReviewItem(reviewItemDto);
-    reviewItemViewModel.itemId = updatedReviewItem.itemId;
+    var newlyPutReviewItem = await this.reviewItemRepository.putReviewItem(reviewItemDto);
+    newReviewItem.itemId = newlyPutReviewItem.itemId;
 
-    return reviewItemViewModel;
+    return newReviewItem;
   }
 
   /**
@@ -29,7 +29,7 @@ class ReviewItemService {
    * @param {string} itemType 
    * @param {string} itemName 
    */
-  async createNewReviewItem(itemType, itemName) {
+  async createNewReviewItem(itemType: ItemTypes, itemName: string): Promise<ReviewItemViewModel> {
     // Does not exist create and save
     var newReviewItemDto = new ReviewItemDTO();
     newReviewItemDto.itemType = itemType;
@@ -42,46 +42,46 @@ class ReviewItemService {
     return reviewItemViewModel;
   }
 
-  async addTagToReviewItem(reviewItemViewModel, tagViewModel) {
+  async addTagToReviewItem(reviewItem: ReviewItemViewModel, newTagToAttach: TagViewModel): Promise<ReviewItemViewModel> {
     // Add new tag to database if it does not exist already
-    var existingTagDto = await this.tagRepository.getTagByText(tagViewModel.tagText);
+    var existingTagDto = await this.tagRepository.getTagByText(newTagToAttach.tagText);
     if (existingTagDto == null) {
       //Tag does not exist, need to add
-      var tagToAddDto = TagModelMapper.mapViewModelToDTO(tagViewModel);
+      var tagToAddDto = TagModelMapper.mapViewModelToDTO(newTagToAttach);
       existingTagDto = await this.tagRepository.putTag(tagToAddDto);
     }
 
-    var reviewItemDto = ReviewItemModelMapper.mapViewModelToDTO(reviewItemViewModel);
+    var reviewItemDto = ReviewItemModelMapper.mapViewModelToDTO(reviewItem);
     reviewItemDto.tagIds.push(existingTagDto.tagId);
 
     await this.reviewItemRepository.updateReviewItem(reviewItemDto);
 
     //Update review model and return
     var existingTagViewModel = TagModelMapper.mapDTOToViewModel(existingTagDto);
-    reviewItemViewModel.tags.push(existingTagViewModel);
-    return reviewItemViewModel;
+    reviewItem.tags.push(existingTagViewModel);
+    return reviewItem;
   }
 
-  async removeTagFromReviewItem(reviewItemViewModel, tagViewModel) {
-    reviewItemViewModel.tags = reviewItemViewModel.tags.filter(tag => tag.tagText != tagViewModel.tagText);
+  async removeTagFromReviewItem(reviewItem: ReviewItemViewModel, tagToRemove: TagViewModel): Promise<ReviewItemViewModel> {
+    reviewItem.tags = reviewItem.tags.filter(tag => tag.tagText != tagToRemove.tagText);
 
-    var reviewItemDto = ReviewItemModelMapper.mapViewModelToDTO(reviewItemViewModel);
+    var reviewItemDto = ReviewItemModelMapper.mapViewModelToDTO(reviewItem);
     await this.reviewItemRepository.updateReviewItem(reviewItemDto);
 
-    return reviewItemViewModel;
+    return reviewItem;
   }
 
-  async getReviewItem(itemType, itemName) {
+  async getReviewItem(itemType: ItemTypes, itemName: string): Promise<ReviewItemViewModel> {
     var reviewItemDto = await this.reviewItemRepository.getReviewItem(itemType, itemName);
     if (reviewItemDto == null) {
       return null;
     }
 
-    var reviewItemViewModel = ReviewItemModelMapper.mapDTOToViewModel(reviewItemDto);
+    var currentReviewItem = ReviewItemModelMapper.mapDTOToViewModel(reviewItemDto);
     // Get tags if any
     if (reviewItemDto.tagIds.length >= 1) {
 
-      var tagViewModelGetTasks = [];
+      var tagGetTasks = [];
       reviewItemDto.tagIds.forEach(tagId => {
         var getPromise = new Promise(async (resolve, reject) => {
           var tag = this.tagRepository.getTag(tagId);
@@ -90,29 +90,29 @@ class ReviewItemService {
           }
           resolve(tag);
         });
-        tagViewModelGetTasks.push(getPromise);
+        tagGetTasks.push(getPromise);
       });
 
-      var tags = await Promise.all(tagViewModelGetTasks);
-      reviewItemViewModel.tags = tags.map(tagDto => TagModelMapper.mapDTOToViewModel(tagDto));
+      var tags = await Promise.all(tagGetTasks);
+      currentReviewItem.tags = tags.map(tagDto => TagModelMapper.mapDTOToViewModel(tagDto));
     }
 
-    return reviewItemViewModel;
+    return currentReviewItem;
   }
 
-  async addNewTag(tagViewModel) {
-    var existingTagDto = await this.tagRepository.getTagByText(tagViewModel.tagText);
+  async addNewTag(newTag: TagViewModel): Promise<TagViewModel> {
+    var existingTagDto = await this.tagRepository.getTagByText(newTag.tagText);
     if (existingTagDto != null) {
-      throw new Error(`Tag already exists with text=${tagViewModel.tagText}`);
+      throw new Error(`Tag already exists with text=${newTag.tagText}`);
     }
 
     //Tag does not exist, add
-    var tagToAddDto = TagModelMapper.mapViewModelToDTO(tagViewModel);
+    var tagToAddDto = TagModelMapper.mapViewModelToDTO(newTag);
     var addedTagDto = await this.tagRepository.putTag(tagToAddDto);
     return TagModelMapper.mapDTOToViewModel(addedTagDto);
   }
 
-  async updateTag(tagViewModel) {
+  async updateTag(tagViewModel: TagViewModel): Promise<void> {
     var existingTagDto = await this.tagRepository.getTag(tagViewModel.tagId);
     if (existingTagDto == null) {
       throw new Error(`Cannot update non-existant tag. TagId=${tagViewModel.tagId}`);
@@ -122,14 +122,14 @@ class ReviewItemService {
     await this.tagRepository.updateTag(tagToUpdateDto);
   }
 
-  async deleteTag(tagViewModel) {
-    var existingTagDto = await this.tagRepository.getTag(tagViewModel.tagId);
+  async deleteTag(deletedTag: TagViewModel): Promise<void> {
+    var existingTagDto = await this.tagRepository.getTag(deletedTag.tagId);
     if (existingTagDto == null) {
-      throw new Error(`Cannot delete non-existant tag. TagId=${tagViewModel.tagId}`);
+      throw new Error(`Cannot delete non-existant tag. TagId=${deletedTag.tagId}`);
     }
 
     //Delete tag off all review items that contain it
-    var allReviewItemsWithTag = await this.reviewItemRepository.getAllReviewItemsWithTag(tagViewModel.tagId);
+    var allReviewItemsWithTag = await this.reviewItemRepository.getAllReviewItemsWithTag(deletedTag.tagId);
     var allRemoveTagTasks = [];
     allReviewItemsWithTag.forEach(reviewItemDto => {
       allRemoveTagTasks.push(this.removeTagFromReviewItemDto(reviewItemDto, existingTagDto.tagId));
@@ -139,23 +139,23 @@ class ReviewItemService {
     await this.tagRepository.deleteTag(existingTagDto.tagId);
   }
 
-  async removeTagFromReviewItemDto(reviewItemDto, tagIdToRemove) {
+  private async removeTagFromReviewItemDto(reviewItemDto: ReviewItemDTO, tagIdToRemove: number) {
     reviewItemDto.tagIds = reviewItemDto.tagIds.filter((tagId) => tagId != tagIdToRemove);
     await this.reviewItemRepository.updateReviewItem(reviewItemDto);
   }
 
-  async getAllSelectableTags() {
+  async getAllSelectableTags(): Promise<TagViewModel[]> {
     var tagDtos = await this.tagRepository.getAllTags();
     var tagViewModels = tagDtos.map(tagDto => TagModelMapper.mapDTOToViewModel(tagDto));
     return tagViewModels;
   }
 
-  async getUserStats() {
+  async getUserStats(): Promise<ReviewItemStatisticsViewModel> {
     var allTaggedItems = await this.reviewItemRepository.getAllReviewItems();
-    var allTags = [].concat.apply([], allTaggedItems.map(item => item.tags));
+    var allTags = [].concat.apply([], allTaggedItems.map(item => item.tagIds));
 
     var statsModel = new ReviewItemStatisticsViewModel();
-    statsModel.taggedItemCount = allTaggedItems.filter(item => item.tags.length > 0).length;
+    statsModel.taggedItemCount = allTaggedItems.filter(item => item.tagIds.length > 0).length;
     statsModel.totalTagCount = allTags.length;
 
     return statsModel;

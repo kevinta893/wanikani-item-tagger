@@ -13,7 +13,7 @@ class TamperMonkeyUserDataContext {
    * @param {*} value Value
    * @returns Promise with no value on success, no value for rejected
    */
-  put(key, value) {
+  put(key: string, value: any): Promise<any> {
     if (key == null || key == '') {
       throw new Error(`Cannot save with null key. Value=${value}`);
     }
@@ -25,14 +25,14 @@ class TamperMonkeyUserDataContext {
    * @param {*} key Key to fetch
    * @returns Promise
    */
-  get(key) {
+  get(key): Promise<any> {
     return GM.getValue(key);
   }
 
   /**
    * Deletes a value for the given key
    */
-  delete(key) {
+  delete(key): Promise<void> {
     return GM.deleteValue(key);
   }
 
@@ -40,7 +40,7 @@ class TamperMonkeyUserDataContext {
    * Gets all keys
    * @returns Promise
    */
-  getAllKeys() {
+  getAllKeys(): Promise<string[]> {
     return GM.listValues();
   }
 
@@ -50,7 +50,7 @@ class TamperMonkeyUserDataContext {
    * Otherwise retrieves all values in database
    * @param {Func<string,bool>} keyFilter (Optional) Lambda with param for key and returns bool
    */
-  getAllValues(keyFilter) {
+  getAllValues(keyFilter): Promise<any> {
     //No filter, return all items
     if (keyFilter == null) {
       keyFilter = (() => true);

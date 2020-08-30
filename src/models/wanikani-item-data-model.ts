@@ -3,6 +3,6 @@
  * Contains only data that can be extracted from WaniKani
  */
 class WanikaniItemDataModel {
-  itemName = '';
-  itemType = '';
+  itemName: string;
+  itemType: ItemTypes;
 }

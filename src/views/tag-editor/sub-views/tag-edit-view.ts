@@ -1,5 +1,5 @@
 class TagEditView {
-  html = `
+  private readonly html = `
     <div id="tag-edit-form">
       <div id="tag-edit-color-picker"></div>
       <div class="tag-edit-input-group">
@@ -12,29 +12,29 @@ class TagEditView {
     </div>
   `;
 
-  tagEditForm;
-  tagEditInput;
-  tagEditInputValidationMessage;
-  tagEditCancelBtn;
-  tagEditDeleteBtn;
-  tagEditSubmitBtn;
-  tagEditColorPicker;
+  private tagEditForm;
+  private tagEditInput;
+  private tagEditInputValidationMessage;
+  private tagEditCancelBtn;
+  private tagEditDeleteBtn;
+  private tagEditSubmitBtn;
+  private tagEditColorPicker;
 
-  tagViewModel;
+  private tag;
 
-  eventTagUpdated = new EventEmitter();
-  eventTagDeleted = new EventEmitter();
-  eventTagEditCancelled = new EventEmitter();
-  eventTagTextInput = new EventEmitter();
+  private readonly eventTagUpdated = new EventEmitter();
+  private readonly eventTagDeleted = new EventEmitter();
+  private readonly eventTagEditCancelled = new EventEmitter();
+  private readonly eventTagTextInput = new EventEmitter();
 
-  isTagDuplicate = (tagText) => false;
+  private isTagDuplicate: ((tagText: string) => boolean) = (tagText) => false;
 
   /**
    * Creates a tag editor view
    * @param {string} el Selector of the element to replace
-   * @param {object} options Options for this tag editor
+   * @param {any} options Options for this tag editor
    */
-  constructor(el, options = null) {
+  constructor(el: string, options = null) {
     // Configure the UI for the definition page
     var rootElement = $(this.html);
     $(el).replaceWith(rootElement);
@@ -78,7 +78,7 @@ class TagEditView {
 
     //Delete clicked
     this.tagEditDeleteBtn.on('click', (e) => {
-      this.eventTagDeleted.emit(this.tagViewModel);
+      this.eventTagDeleted.emit(this.tag);
     });
 
     //Color picked
@@ -87,7 +87,7 @@ class TagEditView {
     });
   }
 
-  validateTag() {
+  validateTag(): boolean {
     var tagText = this.tagEditInput.val();
 
     //Tag text is empty
@@ -99,14 +99,14 @@ class TagEditView {
 
     //Tag text and color is the same as the original
     var selectedColor = this.tagEditColorPicker.getSelectedColor();
-    if (tagText == this.tagViewModel.tagText && selectedColor == this.tagViewModel.tagColor) {
+    if (tagText == this.tag.tagText && selectedColor == this.tag.tagColor) {
       this.clearValidationError();
       this.disableEditButton();
       return false;
     }
 
     //Tag duplicated with another
-    if (tagText != this.tagViewModel.tagText && this.isTagDuplicate(tagText)) {
+    if (tagText != this.tag.tagText && this.isTagDuplicate(tagText)) {
       this.showValidationError('Tag already exists');
       this.disableEditButton();
       return false;
@@ -117,7 +117,7 @@ class TagEditView {
     return true;
   }
 
-  tagUpdated() {
+  tagUpdated(): void {
     var newTagText = this.tagEditInput.val();
     if (newTagText.length <= 0) {
       return;
@@ -126,21 +126,21 @@ class TagEditView {
     this.tagEditInput.val('');
     this.tagEditSubmitBtn.prop('disabled', true);
 
-    var currentTagModel = this.tagViewModel;
-    var updatedTagViewModel = new TagViewModel();
-    Object.assign(updatedTagViewModel, currentTagModel);
+    var currentTagModel = this.tag;
+    var updatedTag = new TagViewModel();
+    Object.assign(updatedTag, currentTagModel);
 
-    updatedTagViewModel.tagText = newTagText;
-    updatedTagViewModel.tagColor = this.tagEditColorPicker.getSelectedColor();
+    updatedTag.tagText = newTagText;
+    updatedTag.tagColor = this.tagEditColorPicker.getSelectedColor();
 
-    this.eventTagUpdated.emit(updatedTagViewModel);
+    this.eventTagUpdated.emit(updatedTag);
   };
 
-  show(tagViewModel) {
-    this.tagViewModel = tagViewModel;
-    this.tagEditInput.val(tagViewModel.tagText);
-    this.tagEditInput.attr('placeholder', tagViewModel.tagText);
-    this.tagEditColorPicker.setSelectedColor(tagViewModel.tagColor);
+  show(tag: TagViewModel): void {
+    this.tag = tag;
+    this.tagEditInput.val(tag.tagText);
+    this.tagEditInput.attr('placeholder', tag.tagText);
+    this.tagEditColorPicker.setSelectedColor(tag.tagColor);
 
     this.clearValidationError();
 
@@ -148,26 +148,26 @@ class TagEditView {
     this.tagEditInput.focus();
   }
 
-  hide() {
+  hide(): void {
     this.tagEditForm.hide();
   }
 
-  showValidationError(errorMessage) {
+  showValidationError(errorMessage: string): void {
     this.tagEditInputValidationMessage.text(errorMessage);
     this.tagEditInputValidationMessage.show();
     this.tagEditInput.addClass('tag-edit-input-invalid');
   }
 
-  clearValidationError() {
+  clearValidationError(): void {
     this.tagEditInput.removeClass('tag-edit-input-invalid');
     this.tagEditInputValidationMessage.hide();
   }
 
-  disableEditButton() {
+  disableEditButton(): void {
     this.tagEditSubmitBtn.prop('disabled', true);
   }
 
-  enableEditButton() {
+  enableEditButton(): void {
     this.tagEditSubmitBtn.prop('disabled', false);
   }
 
@@ -177,23 +177,23 @@ class TagEditView {
    * if the provided tag text is duplicate or not. Returns true if duplicate,
    * false otherwise
    */
-  addTagDuplicateValidator(duplicateValidator) {
+  addTagDuplicateValidator(duplicateValidator: ((tagText: string) => boolean)): void {
     this.isTagDuplicate = duplicateValidator;
   }
 
-  bindTagEditCancelled(handler) {
+  bindTagEditCancelled(handler: () => void): void {
     this.eventTagEditCancelled.addEventListener(handler);
   }
 
-  bindTagDeleted(handler) {
+  bindTagDeleted(handler: (deletedTag: TagViewModel) => void): void {
     this.eventTagDeleted.addEventListener(handler);
   }
 
-  bindTagUpdated(handler) {
+  bindTagUpdated(handler: (updatedTag: TagViewModel) => void): void {
     this.eventTagUpdated.addEventListener(handler);
   }
 
-  bindTagTextInput(handler) {
+  bindTagTextInput(handler: (tagText: string) => void): void {
     this.eventTagTextInput.addEventListener(handler);
   }
 }

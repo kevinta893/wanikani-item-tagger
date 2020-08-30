@@ -1,4 +1,4 @@
 class ReviewItemStatisticsViewModel {
-  taggedItemCount = 0;
-  totalTagCount = 0;
+  taggedItemCount: number;
+  totalTagCount: number;
 }

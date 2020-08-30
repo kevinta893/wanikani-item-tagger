@@ -1,6 +1,6 @@
 class TagValidator {
 
-  static isValid(tagText) {
+  static isValid(tagText: string): boolean {
     if (
       StringUtil.isNullOrEmpty(tagText) || 
       StringUtil.hasNewLines(tagText) || 

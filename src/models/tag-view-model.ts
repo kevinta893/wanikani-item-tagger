@@ -3,7 +3,7 @@
  * Contains information on how to display the tag on the UI
  */
 class TagViewModel {
-  tagId = 0;
-  tagText = '';
-  tagColor = '';     //Hexadecimal color
+  tagId: number;
+  tagText: string;
+  tagColor: string;     //Hexadecimal color
 }

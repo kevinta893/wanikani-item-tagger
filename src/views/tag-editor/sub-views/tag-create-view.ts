@@ -1,5 +1,5 @@
 class TagCreateView {
-  html = `
+  private readonly html = `
     <div id="tag-create-form">
       <div id="tag-create-color-picker"></div>
       <input id="tag-create-input" type="text" autocaptialize="none" autocomplete="off" spellcheck="on" autocorrect="false" maxlength="${Constants.MAX_TAG_TEXT_LENGTH}"/>
@@ -7,21 +7,21 @@ class TagCreateView {
     </div>
   `;
 
-  tagEditorRootElem;
-  tagCreateForm;
-  tagCreateInput;
-  tagCreateSubmitBtn;
-  tagCreateColorPicker
+  private tagEditorRootElem;
+  private tagCreateForm;
+  private tagCreateInput;
+  private tagCreateSubmitBtn;
+  private tagCreateColorPicker
 
-  eventNewTagCreated = new EventEmitter();
-  eventTagTextInput = new EventEmitter();
+  private readonly eventNewTagCreated = new EventEmitter();
+  private readonly eventTagTextInput = new EventEmitter();
 
   /**
    * Creates a tag editor view
    * @param {string} el Selector of the element to replace
    * @param {object} options Options for this tag editor
    */
-  constructor(el, options = null) {
+  constructor(el: string, options = null) {
     // Configure the UI for the definition page
     var rootElement = $(this.html);
     $(el).replaceWith(rootElement);
@@ -64,15 +64,15 @@ class TagCreateView {
     });
   }
 
-  disableCreateButton() {
+  disableCreateButton(): void {
     this.tagCreateSubmitBtn.prop('disabled', true);
   }
 
-  enableCreateButton() {
+  enableCreateButton(): void {
     this.tagCreateSubmitBtn.prop('disabled', false);
   }
 
-  newTagEntered() {
+  newTagEntered(): void {
     var newTagText = this.tagCreateInput.val();
     if (newTagText.length <= 0) {
       return;
@@ -81,27 +81,27 @@ class TagCreateView {
     this.tagCreateInput.val('');
     this.tagCreateSubmitBtn.prop('disabled', true);
 
-    var newItemModel = new TagViewModel();
-    newItemModel.tagText = newTagText;
-    newItemModel.tagColor = this.tagCreateColorPicker.getSelectedColor();
+    var newTag = new TagViewModel();
+    newTag.tagText = newTagText;
+    newTag.tagColor = this.tagCreateColorPicker.getSelectedColor();
 
-    this.eventNewTagCreated.emit(newItemModel);
+    this.eventNewTagCreated.emit(newTag);
   };
 
-  show() {
+  show(): void {
     this.tagCreateForm.show()
     this.tagCreateInput.focus();
   }
 
-  hide() {
+  hide(): void {
     this.tagCreateForm.hide()
   }
 
-  bindTagTextInput(handler) {
+  bindTagTextInput(handler: (tagText: string) => void): void {
     this.eventTagTextInput.addEventListener(handler);
   }
 
-  bindNewTagCreated(handler) {
+  bindNewTagCreated(handler: (newTag: TagViewModel) => void): void {
     this.eventNewTagCreated.addEventListener(handler);
   }
 }

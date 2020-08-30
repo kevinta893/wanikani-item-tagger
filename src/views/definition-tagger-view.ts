@@ -2,24 +2,24 @@
  * UI for the definition pages on Wanikani
  * For radicals, kanji, and vocabulary pages
  */
-class DefinitionTaggerView {
+class DefinitionTaggerView implements TagView {
 
-  html = `
+  private readonly html = `
     <div class="alternative-meaning">
       <h2>Tags</h2>
       <div id="tag-list"></div>
       <button id="tag-ui-open-editor-btn" class="tag-ui-add-btn" title="Edit Tags">Edit tags</button>
     </div>
   `;
-  rootElement;
-  tagListView;
-  tagEditorView;
+  private rootElement;
+  private tagListView: TagListView;
+  private tagEditorView: TagEditorView;
 
-  reviewItemViewModel;
+  private reviewItem: ReviewItemViewModel;
 
-  eventTagAdded = new EventEmitter();
-  eventTagRemoved = new EventEmitter();
-  eventTagReviewItemChanged = new EventEmitter();
+  private readonly eventTagAdded = new EventEmitter();
+  private readonly eventTagRemoved = new EventEmitter();
+  private readonly eventTagReviewItemChanged = new EventEmitter();
 
   constructor() {
     //Configure the UI for the definition page
@@ -56,38 +56,38 @@ class DefinitionTaggerView {
     });
   }
 
-  tagSelectionChanged(tagViewModel, isSelected) {
-    var reviewItemViewModel = this.reviewItemViewModel;
+  tagSelectionChanged(selectedTag: TagViewModel, isSelected: boolean): void {
+    var reviewItem = this.reviewItem;
 
     //Add or remove tags if they exist
     if (isSelected) {
-      this.eventTagAdded.emit(reviewItemViewModel, tagViewModel);
+      this.eventTagAdded.emit(reviewItem, selectedTag);
     } else {
-      this.eventTagRemoved.emit(reviewItemViewModel, tagViewModel);
+      this.eventTagRemoved.emit(reviewItem, selectedTag);
     }
   }
 
-  loadReviewItem(reviewItemViewModel) {
-    this.reviewItemViewModel = reviewItemViewModel;
+  loadReviewItem(reviewItem: ReviewItemViewModel): void {
+    this.reviewItem = reviewItem;
 
-    this.tagListView.loadReviewItem(reviewItemViewModel);
-    this.tagEditorView.loadReviewItemSelection(reviewItemViewModel);
+    this.tagListView.loadReviewItem(reviewItem);
+    this.tagEditorView.loadReviewItemSelection(reviewItem);
   }
 
-  loadTagEditorOptions(listOfTagViewModels) {
-    this.tagEditorView.loadTagOptions(listOfTagViewModels);
+  loadTagEditorOptions(listOfTags: Array<TagViewModel>): void {
+    this.tagEditorView.loadTagOptions(listOfTags);
   }
 
-  addTagEditorTagOption(tagViewModel) {
-    this.tagEditorView.addTagPickOption(tagViewModel);
+  addTagEditorTagOption(tagOption: TagViewModel): void {
+    this.tagEditorView.addTagPickOption(tagOption);
   }
 
-  getCurrentWkItemData() {
+  getCurrentWkItemData(): WanikaniItemDataModel {
     // Fetches item data off the current page
     // Gathers data from page
     var url = new URL(window.location.href);
     var pageUrlPathParts = url.pathname.split('/');
-    var itemType = mapUrlItemTypeToItemType(pageUrlPathParts[1]);
+    var itemType = ItemTypeMapper.mapUrlItemTypeToItemType(pageUrlPathParts[1]);
     var itemName = decodeURIComponent(pageUrlPathParts[2]);
 
     var wkItemData = new WanikaniItemDataModel();
@@ -98,31 +98,31 @@ class DefinitionTaggerView {
     return wkItemData;
   }
 
-  getReviewItem() {
-    return this.reviewItemViewModel;
+  getReviewItem(): ReviewItemViewModel {
+    return this.reviewItem;
   }
 
-  bindTagAdded(handler) {
+  bindTagAdded(handler: (reviewItem: ReviewItemViewModel, addedTag: TagViewModel) => void): void {
     this.eventTagAdded.addEventListener(handler);
   }
 
-  bindTagRemoved(handler) {
+  bindTagRemoved(handler: (reviewItem: ReviewItemViewModel, removedTag: TagViewModel) => void): void {
     this.eventTagRemoved.addEventListener(handler);
   }
 
-  bindReviewItemChanged(handler) {
+  bindReviewItemChanged(handler: (wkItemData: WanikaniItemDataModel) => void): void {
     this.eventTagReviewItemChanged.addEventListener(handler);
   }
 
-  bindNewTagCreated(handler) {
+  bindNewTagCreated(handler: (newTag: TagViewModel) => void): void {
     this.tagEditorView.bindNewTagCreated(handler);
   }
 
-  bindTagDeleted(handler) {
+  bindTagDeleted(handler: (deletedTag: TagViewModel) => void): void {
     this.tagEditorView.bindTagDeleted(handler);
   }
 
-  bindTagUpdated(handler) {
+  bindTagUpdated(handler: (updatedTag: TagViewModel) => void): void {
     this.tagEditorView.bindTagUpdated(handler);
   }
 }

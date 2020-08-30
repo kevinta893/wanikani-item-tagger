@@ -1,55 +1,55 @@
 class TagRepository {
-  tagNamespace = "tags";
-  dataContext;
+  private readonly tagNamespace = "tags";
+  private readonly dataContext: TamperMonkeyUserDataContext;
 
-  constructor(dataContext) {
+  constructor(dataContext: TamperMonkeyUserDataContext) {
     this.dataContext = dataContext;
   }
 
-  async updateTag(tagDto) {
-    if (this.isNullTagId(tagDto.tagId)) {
-      throw new Error(`Tag update failed, tag id is null. Tag=${tagDto}`);
+  async updateTag(updatedTag: TagDTO): Promise<void> {
+    if (this.isNullTagId(updatedTag.tagId)) {
+      throw new Error(`Tag update failed, tag id is null. Tag=${updatedTag}`);
     }
 
-    var key = this.generateStorageKey(tagDto.tagId);
-    var tag = await this.dataContext.get(key);
+    var key = this.generateStorageKey(updatedTag.tagId);
+    var currentTag = await this.dataContext.get(key);
 
-    if (tag == null) {
-      throw new Error(`Tag update failed, tag does not exist. Tag=${tagDto}`);
+    if (currentTag == null) {
+      throw new Error(`Tag update failed, tag does not exist. Tag=${updatedTag}`);
     }
 
-    await this.dataContext.put(key, tagDto);
+    await this.dataContext.put(key, updatedTag);
   }
 
-  async putTag(tagDto) {
-    if (!this.isNullTagId(tagDto.tagId)) {
-      throw new Error(`Tag put failed, tag id must not be specified. Tag=${tagDto}`);
+  async putTag(newTag: TagDTO): Promise<TagDTO> {
+    if (!this.isNullTagId(newTag.tagId)) {
+      throw new Error(`Tag put failed, tag id must not be specified. Tag=${newTag}`);
     }
 
     var tagId = (new Date()).getTime();
     var key = this.generateStorageKey(tagId);
 
-    var tag = await this.dataContext.get(key);
-    if (tag != null) {
-      throw new Error(`Tag put failed, tag already exists. Tag=${tag}`);
+    var currentTag = await this.dataContext.get(key);
+    if (currentTag != null) {
+      throw new Error(`Tag put failed, tag already exists. Tag=${currentTag}`);
     }
 
-    tagDto.tagId = tagId;
-    await this.dataContext.put(key, tagDto);
-    return tagDto;
+    newTag.tagId = tagId;
+    await this.dataContext.put(key, newTag);
+    return newTag;
   }
 
-  async getTag(tagId) {
+  async getTag(tagId: number): Promise<TagDTO> {
     var key = this.generateStorageKey(tagId);
     return await this.dataContext.get(key);
   }
 
-  async deleteTag(tagId) {
+  async deleteTag(tagId: number): Promise<void> {
     var key = this.generateStorageKey(tagId);
     await this.dataContext.delete(key);
   }
 
-  async getTagByText(tagText) {
+  async getTagByText(tagText): Promise<TagDTO> {
     var allTags = await this.dataContext
       .getAllValues((key) => key.indexOf(this.tagNamespace) == 0)
     var tagSearchResults = allTags
@@ -66,12 +66,12 @@ class TagRepository {
     return tagSearchResults[0];
   }
 
-  async getAllTags() {
+  async getAllTags(): Promise<TagDTO[]> {
     var allTags = await this.dataContext.getAllValues((key) => key.indexOf(this.tagNamespace) == 0);
     return allTags;
   }
 
-  generateStorageKey(tagId) {
+  generateStorageKey(tagId: number) {
     return `${this.tagNamespace}/${tagId}`;
   }
 

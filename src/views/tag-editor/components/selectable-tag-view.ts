@@ -1,6 +1,6 @@
 class SelectableTagView {
 
-  html = `
+  private readonly html = `
     <div class="tag-select-option">
       <div class="tag-select-text">TagText</div>
       <div class="tag-select-edit-btn">
@@ -16,39 +16,40 @@ class SelectableTagView {
     </div>
   `;
 
-  tagSelectedClass = 'tag-selected';
-  tagNotSelectedClass = 'tag-selectable';
+  private readonly tagSelectedClass = 'tag-selected';
+  private readonly tagNotSelectedClass = 'tag-selectable';
 
-  tagElem;
+  private readonly eventTagEditClicked = new EventEmitter();
+  private readonly eventTagSelectChanged = new EventEmitter();
 
-  tagViewModel;
+  private tagElem;
 
-  eventTagEditClicked = new EventEmitter();
-  eventTagSelectChanged = new EventEmitter();
+  private tag: TagViewModel;
 
+  
   /**
    * Creates a new unselected pickable tag
    * @param {string} el Element selector to replace with
-   * @param {TagViewModel} tagViewModel Tag view model to display
+   * @param {TagViewModel} tag Tag view model to display
    */
-  constructor(el, tagViewModel) {
-    this.tagViewModel = tagViewModel;
+  constructor(el: string, tag: TagViewModel) {
+    this.tag = tag;
 
     var rootElement = $(el);
     var tagElem = this.tagElem = $(this.html);
     rootElement.replaceWith(tagElem);
 
-    tagElem.css('background-color', tagViewModel.tagColor);
-    tagElem.attr('data-tag-id', tagViewModel.tagId);
+    tagElem.css('background-color', tag.tagColor);
+    tagElem.attr('data-tag-id', tag.tagId);
     this.setSelection(false);
 
     var tagTextDiv = tagElem.find('.tag-select-text');
-    tagTextDiv.text(tagViewModel.tagText);
+    tagTextDiv.text(tag.tagText);
 
     // Edit button click
     var tagEditButton = tagElem.find('.tag-select-edit-btn');
     tagEditButton.on('click', () => {
-      this.eventTagEditClicked.emit(this.tagViewModel);
+      this.eventTagEditClicked.emit(this.tag);
     });
 
     // Tag Clicked
@@ -57,19 +58,19 @@ class SelectableTagView {
     });
   }
 
-  isSelected() {
+  isSelected(): boolean {
     return this.tagElem.hasClass(this.tagSelectedClass);
   }
 
-  getTagViewModel() {
-    return this.tagViewModel;
+  getTagViewModel(): TagViewModel {
+    return this.tag;
   }
 
   /**
    * Toggles the current selection on/off
    * Emits Tag select changed event
    */
-  toggleSelection() {
+  toggleSelection(): void {
     var previousIsSelected = this.isSelected();
 
     var isSelected = this.isSelected();
@@ -78,7 +79,7 @@ class SelectableTagView {
 
     //Emit event only if changed from last time and user clicked
     if (isSelected != previousIsSelected) {
-      this.eventTagSelectChanged.emit(this.tagViewModel, isSelected);
+      this.eventTagSelectChanged.emit(this.tag, isSelected);
     }
   }
 
@@ -87,7 +88,7 @@ class SelectableTagView {
    * Does not trigger selection changed event
    * @param {boolean} isSelected 
    */
-  setSelection(isSelected) {
+  setSelection(isSelected: boolean): void {
     if (isSelected) {
       this.showSelected();
     }
@@ -96,21 +97,21 @@ class SelectableTagView {
     }
   }
 
-  showSelected() {
+  showSelected(): void {
     this.tagElem.removeClass(this.tagNotSelectedClass);
     this.tagElem.addClass(this.tagSelectedClass);
   }
 
-  showNotSelected() {
+  showNotSelected(): void {
     this.tagElem.removeClass(this.tagSelectedClass);
     this.tagElem.addClass(this.tagNotSelectedClass);
   }
 
-  show() {
+  show(): void {
     this.tagElem.show();
   }
 
-  hide() {
+  hide(): void {
     this.tagElem.hide();
   }
 
@@ -118,11 +119,11 @@ class SelectableTagView {
    * Bind event when the tag selection changed
    * @param {function} handler Calls back with (tagId, bool isSelected)
    */
-  bindTagSelectChanged(handler) {
+  bindTagSelectChanged(handler: (selectedTag: TagViewModel, isSelected: boolean) => void): void {
     this.eventTagSelectChanged.addEventListener(handler);
   }
 
-  bindTagEditClicked(handler) {
+  bindTagEditClicked(handler: (updatedTag: TagViewModel) => void): void {
     this.eventTagEditClicked.addEventListener(handler);
   }
 }

@@ -4,9 +4,8 @@
  * https://github.com/Simonwep/pickr
  */
 class TagColorPickerView {
-  colorPicker;
-
-  eventColorChanged = new EventEmitter();
+  private readonly colorPicker;
+  private readonly eventColorChanged = new EventEmitter();
 
   constructor(replaceElementSelector) {
     const defaultSwatch = [
@@ -20,7 +19,7 @@ class TagColorPickerView {
       '#919191',  //grey
       '#1C1C1C'   //black
     ];
-    
+
     //@ts-ignore: Cannot find name Pickr
     this.colorPicker = Pickr.create({
       el: replaceElementSelector,
@@ -54,15 +53,15 @@ class TagColorPickerView {
     });
   }
 
-  getSelectedColor() {
+  getSelectedColor(): void {
     return this.colorPicker.getSelectedColor().toHEXA().toString();
   }
 
-  setSelectedColor(hexColor) {
+  setSelectedColor(hexColor: string): void {
     this.colorPicker.setColor(hexColor);
   }
 
-  bindColorSelected(handler) {
+  bindColorSelected(handler: (hexColor: string) => void): void {
     this.eventColorChanged.addEventListener(handler);
   }
 }

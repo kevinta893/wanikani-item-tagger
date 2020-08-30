@@ -5,7 +5,7 @@ class TagModelMapper {
    * @param {TagViewModel} tagViewModel 
    * @return {TagDTO}
    */
-  static mapViewModelToDTO(tagViewModel) {
+  static mapViewModelToDTO(tagViewModel: TagViewModel): TagDTO {
     var tagDto = new TagDTO();
     tagDto.tagId = tagViewModel.tagId;
     tagDto.tagText = tagViewModel.tagText;
@@ -19,7 +19,7 @@ class TagModelMapper {
    * @param {TagViewModel} tagViewModel 
    * @return {TagDTO}
    */
-  static mapDTOToViewModel(tagDto) {
+  static mapDTOToViewModel(tagDto: TagDTO): TagViewModel {
     var tagViewModel = new TagViewModel();
     tagViewModel.tagId = tagDto.tagId;
     tagViewModel.tagText = tagDto.tagText;

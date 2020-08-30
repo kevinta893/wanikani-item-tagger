@@ -1,7 +1,7 @@
 class ReviewItemViewModel {
-  itemId = '';
-  itemType = '';
-  itemName = '';
+  itemId: string;
+  itemType: ItemTypes;
+  itemName: string;
 
-  tags = [];    //List of TagViewModel
+  tags: TagViewModel[] = [];
 }

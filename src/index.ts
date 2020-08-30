@@ -25,7 +25,7 @@
 
 
 //Loads user script
-function initialize() {
+function initialize(): void {
   // CSS
   UserscriptCSSLoader.loadUserScriptCss();
 
