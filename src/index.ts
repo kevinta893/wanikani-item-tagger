@@ -18,6 +18,7 @@
 // @grant       GM_addStyle
 // @resource    pickr_monolith_style https://cdn.jsdelivr.net/npm/@simonwep/pickr@1.7.2/dist/themes/monolith.min.css
 // @require     https://cdn.jsdelivr.net/npm/@simonwep/pickr@1.7.2/dist/pickr.min.js
+// @require     https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js
 // @homepage    https://github.com/kevinta893/wanikani-common-vocab-indicator
 // @homepageURL https://github.com/kevinta893/wanikani-common-vocab-indicator
 // @updateURL   https://github.com/kevinta893/wanikani-item-tagger/raw/master/Wanikani%20Item%20Tagger.user.js

@@ -150,6 +150,22 @@ class ReviewItemService {
     return tagViewModels;
   }
 
+  async getJsonExportModel(): Promise<JsonReviewItemExportModel> {
+    var allReviewItems = await this.reviewItemRepository.getAllReviewItems();
+    var allTags = await this.tagRepository.getAllTags();
+
+    var jsonExport = JsonExportModelMapper.mapToExportModel(allReviewItems, allTags);
+    return jsonExport;
+  }
+
+  async getCsvExportModel(): Promise<CsvReviewItemExportModel> {
+    var allReviewItems = await this.reviewItemRepository.getAllReviewItems();
+    var allTags = await this.tagRepository.getAllTags();
+
+    var csvExport = CsvExportModelMapper.mapToExportModel(allReviewItems, allTags);
+    return csvExport;
+  }
+
   async getUserStats(): Promise<ReviewItemStatisticsViewModel> {
     var allReviewItems = await this.reviewItemRepository.getAllReviewItems();
     var allTags = [].concat.apply([], allReviewItems.map(item => item.tagIds));
