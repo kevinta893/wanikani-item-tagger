@@ -71,11 +71,11 @@ class TagRepository {
     return allTags;
   }
 
-  generateStorageKey(tagId: number) {
+  private generateStorageKey(tagId: number) {
     return `${this.tagNamespace}/${tagId}`;
   }
 
-  isNullTagId(tagId) {
+  private isNullTagId(tagId) {
     return tagId == null || tagId <= 0;
   }
 }

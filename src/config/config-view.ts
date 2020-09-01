@@ -1,4 +1,4 @@
-class TaggerConfigView {
+class TagConfigView {
 
   html = `
   <span id="tag-ui-open-config-btn">&#x2699;</span>
@@ -122,17 +122,17 @@ class TaggerConfigView {
   }
 }
 
-class TaggerConfigController {
+class TagConfigController {
 
-  tagConfigView;
-  tagService;
+  tagConfigView: TagConfigView;
+  reviewItemService: ReviewItemService;
 
-  constructor(tagConfigView, tagService) {
+  constructor(tagConfigView: TagConfigView, reviewItemService: ReviewItemService) {
     this.tagConfigView = tagConfigView;
-    this.tagService = tagService;
+    this.reviewItemService = reviewItemService;
 
     this.tagConfigView.bindOnConfigOpen(() => {
-      this.tagService.getUserStats().then((userStats) => {
+      this.reviewItemService.getUserStats().then((userStats) => {
         this.tagConfigView.showUserStats(userStats);
       });
       this.tagConfigView.showConfigModal();
@@ -144,6 +144,10 @@ class TaggerConfigController {
 
     this.tagConfigView.bindOnConfigCSVExportRequested(() => {
 
+    });
+
+    this.reviewItemService.getAllTagStats().then((tagStats) => {
+      console.log(tagStats);
     });
   }
 }

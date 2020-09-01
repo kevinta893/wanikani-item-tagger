@@ -44,8 +44,8 @@ function initialize(): void {
   var taggerController = new TaggerController(tagView, tagService);
 
   // Config UI
-  var taggerConfigView = new TaggerConfigView();
-  var taggerConfigController = new TaggerConfigController(taggerConfigView, tagService);
+  var taggerConfigView = new TagConfigView();
+  var taggerConfigController = new TagConfigController(taggerConfigView, tagService);
 
   //tagConfigView.onConfigOpen();
   console.log('Wanikani Item Tagger started.');

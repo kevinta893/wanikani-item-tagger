@@ -50,17 +50,17 @@ class ReviewItemRepository {
     return allItems;
   }
 
-  async getAllReviewItemsWithTag(tagId): Promise<ReviewItemDTO[]> {
+  async getAllReviewItemsWithTag(tagIds: number[]): Promise<ReviewItemDTO[]> {
     var allReviewItems = await this.dataContext.getAllValues((key) => key.indexOf(this.reviewItemsNamespace) == 0);
-    var allReviewItemsWithTag = allReviewItems.filter(reviewItemDto => reviewItemDto.tagIds.find(tId => tId == tagId) != null);
+    var allReviewItemsWithTag = allReviewItems.filter(reviewItemDto => reviewItemDto.tagIds.find(tId => tagIds.find(searchTagId => searchTagId == tId) != null) != null);
     return allReviewItemsWithTag;
   }
 
-  generateReviewItemId(reviewItemType: ReviewItemType, reviewItemName: string): string {
+  private generateReviewItemId(reviewItemType: ReviewItemType, reviewItemName: string): string {
     return `${ReviewItemType[reviewItemType]}/${reviewItemName}`;
   }
 
-  generateStorageKey(reviewItemId: string): string {
+  private generateStorageKey(reviewItemId: string): string {
     return `${this.reviewItemsNamespace}/${reviewItemId}`;
   }
 }

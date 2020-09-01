@@ -129,7 +129,7 @@ class ReviewItemService {
     }
 
     //Delete tag off all review items that contain it
-    var allReviewItemsWithTag = await this.reviewItemRepository.getAllReviewItemsWithTag(deletedTag.tagId);
+    var allReviewItemsWithTag = await this.reviewItemRepository.getAllReviewItemsWithTag([deletedTag.tagId]);
     var allRemoveTagTasks = [];
     allReviewItemsWithTag.forEach(reviewItemDto => {
       allRemoveTagTasks.push(this.removeTagFromReviewItemDto(reviewItemDto, existingTagDto.tagId));
@@ -151,13 +151,28 @@ class ReviewItemService {
   }
 
   async getUserStats(): Promise<ReviewItemStatisticsViewModel> {
-    var allTaggedItems = await this.reviewItemRepository.getAllReviewItems();
-    var allTags = [].concat.apply([], allTaggedItems.map(item => item.tagIds));
+    var allReviewItems = await this.reviewItemRepository.getAllReviewItems();
+    var allTags = [].concat.apply([], allReviewItems.map(item => item.tagIds));
 
     var statsModel = new ReviewItemStatisticsViewModel();
-    statsModel.taggedItemCount = allTaggedItems.filter(item => item.tagIds.length > 0).length;
+    statsModel.taggedItemCount = allReviewItems.filter(item => item.tagIds.length > 0).length;
     statsModel.totalTagCount = allTags.length;
 
     return statsModel;
+  }
+
+  async getAllTagStats(): Promise<TagStatsViewModel[]> {
+    var allTags = await this.tagRepository.getAllTags();
+    var allReviewItems = await this.reviewItemRepository.getAllReviewItems();
+
+    // Assemble each stat model
+    var tagStats: TagStatsViewModel[] = [];
+    allTags.forEach(tag => {
+      var relatedReviewItems = allReviewItems.filter(reviewItem => reviewItem.tagIds.find(tagId => tagId == tag.tagId) != null);
+      var tagStat = TagStatsModelMapper.mapDTOToViewModel(tag, relatedReviewItems);
+      tagStats.push(tagStat);
+    });
+
+    return tagStats;
   }
 }
