@@ -53,7 +53,7 @@ class TagColorPickerView {
     });
   }
 
-  getSelectedColor(): void {
+  getSelectedColor(): string {
     return this.colorPicker.getSelectedColor().toHEXA().toString();
   }
 

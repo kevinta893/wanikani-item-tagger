@@ -7,7 +7,7 @@ class TagEditorView {
     </div>
   `;
 
-  private tagEditorRootElem;
+  private tagEditorRootElem: JQuery<HTMLElement>;
   private tagEditView: TagEditView;
   private tagCreateView: TagCreateView;
   private tagPickerListView: TagPickerListView;

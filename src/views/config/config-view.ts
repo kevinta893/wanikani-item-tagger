@@ -20,7 +20,7 @@ class TagConfigView {
   </div>
   `;
 
-  private configModal;
+  private configModal: JQuery<HTMLElement>;
 
   private readonly eventModalOpened = new EventEmitter();
   private readonly eventModalClosed = new EventEmitter();

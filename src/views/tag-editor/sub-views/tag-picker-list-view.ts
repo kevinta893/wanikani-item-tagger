@@ -15,7 +15,7 @@ class TagPickerListView {
   private readonly eventTagSelectionChanged = new EventEmitter();
   private readonly eventTagEditClicked = new EventEmitter();
 
-  constructor(el, options = null) {
+  constructor(el: string, options = null) {
     var rootElement = $(this.html);
     $(el).replaceWith(rootElement);
 

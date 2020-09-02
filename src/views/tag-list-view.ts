@@ -7,7 +7,7 @@ class TagListView {
   private readonly newTagHtml = `
     <div class="tag"></div>
   `;
-  private tagListRoot;
+  private tagListRoot: JQuery<HTMLElement>;
 
   private reviewItem: ReviewItemViewModel;
 

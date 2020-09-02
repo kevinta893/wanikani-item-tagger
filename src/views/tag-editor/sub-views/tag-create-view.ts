@@ -7,11 +7,11 @@ class TagCreateView {
     </div>
   `;
 
-  private tagEditorRootElem;
-  private tagCreateForm;
-  private tagCreateInput;
-  private tagCreateSubmitBtn;
-  private tagCreateColorPicker
+  private tagEditorRootElem: JQuery<HTMLElement>;
+  private tagCreateForm: JQuery<HTMLElement>;
+  private tagCreateInput: JQuery<HTMLInputElement>;
+  private tagCreateSubmitBtn: JQuery<HTMLButtonElement>;
+  private tagCreateColorPicker: TagColorPickerView;
 
   private readonly eventNewTagCreated = new EventEmitter();
   private readonly eventTagTextInput = new EventEmitter();
@@ -35,7 +35,7 @@ class TagCreateView {
 
     //Disable tag enter button when text empty
     this.tagCreateInput.on('input', (e) => {
-      var inputText = this.tagCreateInput.val();
+      var inputText = <string>this.tagCreateInput.val();
       if (inputText.length <= 0) {
         this.disableCreateButton();
       } else {
@@ -51,7 +51,7 @@ class TagCreateView {
 
     //Trim text input
     this.tagCreateInput.on('change', (e) => {
-      var trimmedText = this.tagCreateInput.val().trim();
+      var trimmedText = (<string>this.tagCreateInput.val()).trim();
       this.tagCreateInput.val(trimmedText);
     });
 
@@ -73,7 +73,7 @@ class TagCreateView {
   }
 
   newTagEntered(): void {
-    var newTagText = this.tagCreateInput.val();
+    var newTagText = <string>this.tagCreateInput.val();
     if (newTagText.length <= 0) {
       return;
     }

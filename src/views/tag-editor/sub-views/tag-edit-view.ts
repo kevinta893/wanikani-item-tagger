@@ -12,15 +12,15 @@ class TagEditView {
     </div>
   `;
 
-  private tagEditForm;
-  private tagEditInput;
-  private tagEditInputValidationMessage;
-  private tagEditCancelBtn;
-  private tagEditDeleteBtn;
-  private tagEditSubmitBtn;
-  private tagEditColorPicker;
+  private tagEditForm: JQuery<HTMLElement>;
+  private tagEditInput: JQuery<HTMLInputElement>;
+  private tagEditInputValidationMessage: JQuery<HTMLElement>;
+  private tagEditCancelBtn: JQuery<HTMLButtonElement>;
+  private tagEditDeleteBtn: JQuery<HTMLButtonElement>;
+  private tagEditSubmitBtn: JQuery<HTMLButtonElement>;
+  private tagEditColorPicker: TagColorPickerView;
 
-  private tag;
+  private tag: TagViewModel;
 
   private readonly eventTagUpdated = new EventEmitter();
   private readonly eventTagDeleted = new EventEmitter();
@@ -54,7 +54,7 @@ class TagEditView {
 
     //Trim text input
     this.tagEditInput.on('change', (e) => {
-      var trimmedText = this.tagEditInput.val().trim();
+      var trimmedText = (<string>this.tagEditInput.val()).trim();
       this.tagEditInput.val(trimmedText);
     });
 
@@ -88,7 +88,7 @@ class TagEditView {
   }
 
   validateTag(): boolean {
-    var tagText = this.tagEditInput.val();
+    var tagText = <string>this.tagEditInput.val();
 
     //Tag text is empty
     if (tagText.length <= 0) {
@@ -118,7 +118,7 @@ class TagEditView {
   }
 
   tagUpdated(): void {
-    var newTagText = this.tagEditInput.val();
+    var newTagText = <string>this.tagEditInput.val();
     if (newTagText.length <= 0) {
       return;
     }

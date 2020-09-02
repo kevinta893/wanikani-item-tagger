@@ -22,11 +22,11 @@ class SelectableTagView {
   private readonly eventTagEditClicked = new EventEmitter();
   private readonly eventTagSelectChanged = new EventEmitter();
 
-  private tagElem;
+  private tagElem: JQuery<HTMLElement>;
 
   private tag: TagViewModel;
 
-  
+
   /**
    * Creates a new unselected pickable tag
    * @param {string} el Element selector to replace with
