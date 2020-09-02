@@ -6,6 +6,7 @@
     "del": "^5.1.0",
     "gulp": "^4.0.2",
     "gulp-concat": "^2.6.1",
+    "gulp-flatten": "^0.4.0",
     "gulp-footer": "^2.0.2",
     "gulp-header": "^2.0.9",
     "gulp-preserve-typescript-whitespace": "^1.0.2",
