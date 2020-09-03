@@ -4,4 +4,7 @@ class ReviewItemDTO {
   itemName: string;
 
   tagIds: number[] = [];
+
+  dateCreated: number;
+  dateModified: number;
 }

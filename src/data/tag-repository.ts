@@ -18,7 +18,13 @@ class TagRepository {
       throw new Error(`Tag update failed, tag does not exist. Tag=${updatedTag}`);
     }
 
-    await this.dataContext.put(key, updatedTag);
+    var currentTimeMillis = (new Date()).getTime();
+    updatedTag.dateModified = currentTimeMillis;
+
+    //Object.assign skips undefined properties
+    var dtoCopy = Object.assign(currentTag, updatedTag);
+
+    await this.dataContext.put(key, dtoCopy);
   }
 
   async putTag(newTag: TagDTO): Promise<TagDTO> {
@@ -26,15 +32,17 @@ class TagRepository {
       throw new Error(`Tag put failed, tag id must not be specified. Tag=${newTag}`);
     }
 
-    var tagId = (new Date()).getTime();
-    var key = this.generateStorageKey(tagId);
-
-    var currentTag = await this.dataContext.get(key);
+    var currentTag = await this.getTagByText(newTag.tagText);
     if (currentTag != null) {
       throw new Error(`Tag put failed, tag already exists. Tag=${currentTag}`);
     }
 
-    newTag.tagId = tagId;
+    var currentTimeMillis = (new Date()).getTime();
+    newTag.tagId = currentTimeMillis;
+    newTag.dateCreated = currentTimeMillis;
+    newTag.dateModified = currentTimeMillis;
+
+    var key = this.generateStorageKey(newTag.tagId);
     await this.dataContext.put(key, newTag);
     return newTag;
   }

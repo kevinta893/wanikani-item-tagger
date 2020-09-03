@@ -18,7 +18,13 @@ class ReviewItemRepository {
       throw new Error(`Review Item update failed, review item does not exist. Review Item=${updatedReviewItem}`);
     }
 
-    await this.dataContext.put(key, updatedReviewItem);
+    var currentTimeMillis = (new Date()).getTime();
+    updatedReviewItem.dateModified = currentTimeMillis;
+
+    //Object.assign skips undefined properties
+    var dtoCopy = Object.assign(currentReviewItem, updatedReviewItem);
+
+    await this.dataContext.put(key, dtoCopy);
   }
 
   async putReviewItem(newReviewItem: ReviewItemDTO): Promise<ReviewItemDTO> {
@@ -34,7 +40,11 @@ class ReviewItemRepository {
       throw new Error(`Review Item put failed, review item already exists. Review Item=${currentReviewItem}`);
     }
 
+    var currentTimeMillis = (new Date()).getTime();
     newReviewItem.itemId = reviewItemId;
+    newReviewItem.dateCreated = currentTimeMillis;
+    newReviewItem.dateModified = currentTimeMillis;
+
     await this.dataContext.put(key, newReviewItem);
     return newReviewItem;
   }
