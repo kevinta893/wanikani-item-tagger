@@ -19,6 +19,8 @@ class CsvExportModelMapper {
       return {
         reviewItem: reviewItem.itemName,
         type: ReviewItemType[reviewItem.itemType],
+        dateCreated: new Date(reviewItem.dateCreated).toLocaleString(),
+        lastUpdated: new Date(reviewItem.dateModified).toLocaleString(),
         tags: reviewItemTags.map(reviewItemTag => {
           return {
             tagText: reviewItemTag.tagText
@@ -35,7 +37,7 @@ class CsvExportModelMapper {
   }
 
   static mapToCsvRowData(csvExport: CsvReviewItemExportModel): any[][] {
-    var headerRow = ['review_item', 'type'];
+    var headerRow = ['review_item', 'type', 'date_created', 'last_modified'];
     for (let i = 0; i < csvExport.maxTags; i++) {
       headerRow.push(`tag${i + 1}`);
     }
@@ -45,6 +47,8 @@ class CsvExportModelMapper {
       var row = [
         exportRow.reviewItem,
         exportRow.type,
+        exportRow.dateCreated,
+        exportRow.lastUpdated
       ];
 
       row = row.concat(exportRow.tags.map(tag => tag.tagText));

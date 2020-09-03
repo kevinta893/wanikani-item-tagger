@@ -6,7 +6,9 @@ class JsonExportModelMapper {
         itemId: reviewItem.itemId,
         itemType: ReviewItemType[reviewItem.itemType],
         itemName: reviewItem.itemName,
-        tagIds: reviewItem.tagIds
+        tagIds: reviewItem.tagIds,
+        dateCreated: reviewItem.dateCreated,
+        dateModified: reviewItem.dateModified
       }
     });
 
@@ -15,6 +17,8 @@ class JsonExportModelMapper {
         tagId: tag.tagId,
         tagText: tag.tagText,
         tagColor: tag.tagColor,
+        dateCreated: tag.dateCreated,
+        dateModified: tag.dateModified
       }
     });
 

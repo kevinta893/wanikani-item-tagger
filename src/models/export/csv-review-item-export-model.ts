@@ -4,6 +4,8 @@ class CsvReviewItemExportModel {
   rows: {
     reviewItem: string;
     type: string;
+    dateCreated: string;
+    lastUpdated: string;
     tags: {
       tagText: string;
     }[]

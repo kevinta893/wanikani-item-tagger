@@ -3,6 +3,8 @@ class JsonReviewItemExportModel {
     itemId: string;
     itemType: string;
     itemName: string;
+    dateCreated: number;
+    dateModified: number;
     tagIds: number[];
   }[];
   tagDictionary: {
@@ -10,6 +12,8 @@ class JsonReviewItemExportModel {
       tagId: number;
       tagText: string;
       tagColor: string;
+      dateCreated: number;
+      dateModified: number;
     }
   };
 }
