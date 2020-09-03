@@ -56,6 +56,11 @@ class ReviewTaggerView implements TagView {
     //Review item changed event
     var itemChangedHandler = (key) => {
       var rawWanikaniItem = this.getCurrentReviewItem();
+      if (rawWanikaniItem == null) {
+        // Sometimes the review item is not ready
+        return;
+      }
+
       var wanikaniItem = this.convertCurrentReviewItem(rawWanikaniItem);
       this.eventTagReviewItemChanged.emit(wanikaniItem);
     };
