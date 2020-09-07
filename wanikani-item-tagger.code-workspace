@@ -11,17 +11,16 @@
 		"version": "2.0.0",
 		"tasks": [
 			{
-				"type": "gulp",
-				"task": "build",
-				"group": "build",
-				"problemMatcher": [],
-				"label": "gulp: build"
+				"label": "gulp: build",
+				"type": "shell",
+				"command": "npm run gulp build",
+				"problemMatcher": []
 			},
 			{
-				"type": "gulp",
-				"task": "clean",
-				"problemMatcher": [],
-				"label": "gulp: clean"
+				"label": "gulp: clean",
+				"type": "shell",
+				"command": "npm run gulp clean",
+				"problemMatcher": []
 			}
 		]
 	}

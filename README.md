@@ -17,7 +17,7 @@ You can get install from Greasy Fork here: <TBD>
 
 This section is for development only. You do not need to follow these steps if you are simply using this script.
 
-To compile the source code into a distributable userscript file, use the ```gulp``` or ```gulp build``` command.
+To compile the source code into a distributable userscript file, use the ```npm run gulp``` or ```npm run gulp build``` command.
 
 This command requires *nodejs*, *npm*, and *gulp* to be installed. Note that both a global and local package of gulp needs to be installed.
 
@@ -28,23 +28,22 @@ This command requires *nodejs*, *npm*, and *gulp* to be installed. Note that bot
 **Phase 1: Install**
 
 1. Install [nodejs and npm](https://nodejs.org/)
-2. Install [gulp-cli](https://gulpjs.com/docs/en/getting-started/quick-start/) globally
-3. In the folder of this repository, run the ```npm install`` command to fetch all dependant packages
-4. Run ```gulp``` to build
-5. You should now have a *output/* folder with the compiled userscript
+2. In the folder of this repository, run the ```npm install`` command to fetch all dependant development packages
+3. Run ```npm run gulp``` to build
+4. You should now have a *output/* folder with the compiled userscript
 
 **Phase 2: Quality of life for developement**
 
-6. Open the userscript in your browser to install it as a *new script*
-7. Open the userscript in your favorite editor and copy the meta information
-8. Replace the script in Tampermonkey with only the header information from step (7.)
-9. Add ```[Dev]``` to the *@name* header of the userscript (separates script for development)
+5. Open the userscript in your browser to install it as a *new script*
+6. Open the userscript in your favorite editor and copy the meta information
+7. Replace the script in Tampermonkey with only the header information from step (7.)
+8. Add ```[Dev]``` to the *@name* header of the userscript (separates script for development)
 9. Add the following header to the metadata: ```// @require     file:///LOCATION/OF/YOUR/REPOSITORY/wanikani-item-tagger/output/Wanikani%20Item%20Tagger.user.js```
 10. Save. Now everytime you build the changes to the script will be reflected in your browser on page refresh
 
 #### Building
 
-Build with the ```gulp``` or ```gulp build``` command.
+Build with the ```npm run gulp``` or ```npm run gulp build``` command.
 
 
 ### Libraries Used
