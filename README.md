@@ -1,3 +1,5 @@
+![Build](https://github.com/kevinta893/wanikani-item-tagger/workflows/Build/badge.svg)
+
 # wanikani-item-tagger
 A userscript that allows you to tag WaniKani items and export them as CSV lists
 
