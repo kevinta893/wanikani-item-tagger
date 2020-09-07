@@ -1,0 +1,23 @@
+.tag-info-list {
+  overflow-y: scroll;
+  height: 20em;
+}
+
+.tag-info {
+  display: inline-block;
+}
+
+.tag-info-tag {
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+  margin-left: 0.5em;
+  margin-bottom: 0.5em !important;
+  color: #eee;
+  -webkit-border-radius: 3px;
+  -moz-border-radius: 3px;
+  border-radius: 3px;
+}
+
+.tag-info-review-item-list {
+  display: none;
+}

@@ -13,6 +13,8 @@ class TagConfigView {
       <p>
         Total Number of Tags <span id="tag-ui-tag-count" class="tag-ui-stat-value"></span>
       </p>
+      <div id="tag-info-list"></div>
+
       <button id="tag-ui-config-export-csv">Export All Review Items to CSV</button>
       <button id="tag-ui-config-export-json">Export All Review Items and Tags to JSON</button>
     </div>
@@ -21,6 +23,7 @@ class TagConfigView {
   `;
 
   private configModal: JQuery<HTMLElement>;
+  private tagInfoList: TagInfoListView;
 
   private readonly eventModalOpened = new EventEmitter();
   private readonly eventModalClosed = new EventEmitter();
@@ -33,6 +36,8 @@ class TagConfigView {
     // Get the modal
     var configModal = $('#tag-ui-config-modal');
     this.configModal = configModal;
+
+    this.tagInfoList = new TagInfoListView('#tag-info-list');
 
     var openConfigBtn = $('#tag-ui-open-config-btn');
     openConfigBtn.on('click', () => {
@@ -69,6 +74,10 @@ class TagConfigView {
 
   closeConfigModal(): void {
     this.configModal.hide();
+  }
+
+  showTagStats(tagStats: TagStatsViewModel[]) {
+    this.tagInfoList.showTagStatsList(tagStats);
   }
 
   /**

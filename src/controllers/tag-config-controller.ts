@@ -11,6 +11,9 @@ class TagConfigController {
       this.reviewItemService.getUserStats().then((userStats) => {
         this.tagConfigView.showUserStats(userStats);
       });
+      this.reviewItemService.getAllTagStats().then((tagStats) => {
+        this.tagConfigView.showTagStats(tagStats);
+      });
       this.tagConfigView.showConfigModal();
     });
 
@@ -27,7 +30,7 @@ class TagConfigController {
     });
 
     this.reviewItemService.getAllTagStats().then((tagStats) => {
-      console.log(tagStats);
+      this.tagConfigView.showTagStats(tagStats);
     });
   }
 
