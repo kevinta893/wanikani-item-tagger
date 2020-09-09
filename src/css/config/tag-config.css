@@ -24,11 +24,12 @@
 
 #tag-ui-config-modal-content {
   background-color: #fefefe;
-  margin: 15% auto;
+  margin: 10% auto;
   padding: 20px;
   border: 1px solid #888;
   z-index: 1;
-  width: 80%;
+  width: 55em;
+  height: 33em;
 }
 
 #tag-ui-close-config-btn {

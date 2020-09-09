@@ -1,6 +1,8 @@
 .tag-info-list {
+  display: inline-block;
   overflow-y: scroll;
   height: 20em;
+  width: 40%;
 }
 
 .tag-info {
@@ -8,6 +10,7 @@
 }
 
 .tag-info-tag {
+  cursor: pointer;
   padding-left: 0.5em;
   padding-right: 0.5em;
   margin-left: 0.5em;
@@ -18,6 +21,10 @@
   border-radius: 3px;
 }
 
-.tag-info-review-item-list {
-  display: none;
+.tag-info-selectable {
+  filter: opacity(60%);
+}
+
+.tag-info-selectable:hover {
+  filter: opacity(100%);
 }

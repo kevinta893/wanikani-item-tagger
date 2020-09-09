@@ -13,17 +13,22 @@ class TagConfigView {
       <p>
         Total Number of Tags <span id="tag-ui-tag-count" class="tag-ui-stat-value"></span>
       </p>
-      <div id="tag-info-list"></div>
-
-      <button id="tag-ui-config-export-csv">Export All Review Items to CSV</button>
-      <button id="tag-ui-config-export-json">Export All Review Items and Tags to JSON</button>
+      <div>
+        <div id="tag-info-list"></div>
+        <div id="tag-info-display"></div>
+      </div>
+      <div>
+        <button id="tag-ui-config-export-csv">Export All Review Items to CSV</button>
+        <button id="tag-ui-config-export-json">Export All Review Items and Tags to JSON</button>
+      </div>
     </div>
     <div id="tag-ui-modal-background"></div>
   </div>
   `;
 
-  private configModal: JQuery<HTMLElement>;
-  private tagInfoList: TagInfoListView;
+  private readonly configModal: JQuery<HTMLElement>;
+  private readonly tagInfoList: TagInfoListView;
+  private readonly tagInfoDisplay: TagInfoDisplay;
 
   private readonly eventModalOpened = new EventEmitter();
   private readonly eventModalClosed = new EventEmitter();
@@ -38,6 +43,7 @@ class TagConfigView {
     this.configModal = configModal;
 
     this.tagInfoList = new TagInfoListView('#tag-info-list');
+    this.tagInfoDisplay = new TagInfoDisplay('#tag-info-display');
 
     var openConfigBtn = $('#tag-ui-open-config-btn');
     openConfigBtn.on('click', () => {
@@ -65,6 +71,17 @@ class TagConfigView {
     var jsonExportBtn = $('#tag-ui-config-export-json');
     jsonExportBtn.on('click', () => {
       this.eventJSONExportRequested.emit();
+    });
+
+    // Tag info selection changed, change display
+    this.tagInfoList.bindSelectionChanged((tagStat) => {
+      this.tagInfoDisplay.showTagStats(tagStat);
+    });
+
+    // Export csv for a single tag stat
+    this.tagInfoDisplay.bindCsvExported((tagStat) => {
+      //TODO
+      console.log('tagstat export requested');
     });
   }
 

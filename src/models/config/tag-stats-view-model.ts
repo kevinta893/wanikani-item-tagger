@@ -1,4 +1,4 @@
-class TagStatsViewModel{
+class TagStatsViewModel {
   tag: TagViewModel;
   taggedReviewItems: {
     itemName: string,

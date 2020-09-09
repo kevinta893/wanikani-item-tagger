@@ -6,60 +6,62 @@ class TagInfoItemView {
     </div>
   `;
 
-  private readonly reviewItemTemplateHtml = `
-    <div class="tag-info-review-item"></div>
-  `;
-
   private readonly tagInfoElem: JQuery<HTMLElement>;
-  private readonly tagInfoReviewItemsList: JQuery<HTMLElement>;
-  private tag: TagStatsViewModel;
+  private readonly tagStat: TagStatsViewModel;
+
+  private readonly eventHoverOver = new EventEmitter();
+  private readonly eventClick = new EventEmitter();
+
+  private readonly SELECTABLE_CLASS = 'tag-info-selectable';
 
   constructor(el: string, tagStat: TagStatsViewModel, options = null) {
+    this.tagStat = tagStat;
+
     var tagInfoElem = this.tagInfoElem = $(this.html);
     $(el).replaceWith(tagInfoElem);
-    tagInfoElem.attr('id', el);
+    tagInfoElem.attr('data-tag-id', tagStat.tag.tagId);
 
     var tagInfoTagElem = tagInfoElem.find('.tag-info-tag');
     tagInfoTagElem.text(tagStat.tag.tagText);
     tagInfoTagElem.css('background-color', tagStat.tag.tagColor);
+    this.setSelection(false);
 
-    var tagInfoReviewItemsList = this.tagInfoReviewItemsList = tagInfoElem.find('.tag-info-review-item-list');
-    tagInfoReviewItemsList.attr('id', `tag-info-review-item-list-${tagStat.tag.tagId}`);
-
-    tagStat.taggedReviewItems.forEach(reviewItem => {
-      var reviewItemElem = $(this.reviewItemTemplateHtml);
-      reviewItemElem.text(reviewItem.itemName);
-
-      var itemTypeClass = this.mapItemTypeToCssClass(reviewItem.itemType);
-      reviewItemElem.addClass(itemTypeClass);
-
-      this.tagInfoReviewItemsList.append(reviewItemElem);
+    tagInfoElem.on('click', (e) => {
+      this.toggleSelection();
+      this.eventClick.emit(this.tagStat);
     });
 
-    //this.hideTagInfo();
+    tagInfoElem.on('mouseenter', (e) => {
+      this.eventHoverOver.emit(this.tagStat);
+    });
   }
 
-  showTagInfo() {
-    this.tagInfoReviewItemsList.show();
+  private toggleSelection(): void {
+    var currentValue = this.isSelected();
+    this.setSelection(!currentValue);
   }
 
-  hideTagInfo(){
-    this.tagInfoReviewItemsList.hide();
+  isSelected(): boolean {
+    return !this.tagInfoElem.hasClass(this.SELECTABLE_CLASS);
   }
 
-  private mapItemTypeToCssClass(itemType: ReviewItemType): string {
-    if (itemType == ReviewItemType.Vocabulary) {
-      return 'tag-info-review-item-vocabulary';
+  setSelection(isSelected: boolean): void {
+    if (isSelected) {
+      this.tagInfoElem.removeClass(this.SELECTABLE_CLASS);
+    } else {
+      this.tagInfoElem.addClass(this.SELECTABLE_CLASS);
     }
+  }
 
-    if (itemType == ReviewItemType.Kanji) {
-      return 'tag-info-review-item-kanji';
-    }
+  getTagStat(): TagStatsViewModel {
+    return this.tagStat;
+  }
 
-    if (itemType == ReviewItemType.Radical) {
-      return 'tag-info-review-item-radical';
-    }
+  bindClicked(handler: (tagStat: TagStatsViewModel) => void) {
+    this.eventClick.addEventListener(handler);
+  }
 
-    throw new Error(`Could not map item type=${itemType}`);
+  bindHoverOver(handler: (tagStat: TagStatsViewModel) => void) {
+    this.eventHoverOver.addEventListener(handler);
   }
 }
