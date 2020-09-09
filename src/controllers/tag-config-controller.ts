@@ -32,6 +32,25 @@ class TagConfigController {
     this.reviewItemService.getAllTagStats().then((tagStats) => {
       this.tagConfigView.showTagStats(tagStats);
     });
+
+    // Export csv for a single tag stat
+    this.tagConfigView.bindOnConfigCsvTagStatExportRequested((tagStat) => {
+      this.exportTagStatCsv(tagStat);
+    });
+  }
+
+  async exportTagStatCsv(tagStat: TagStatsViewModel): Promise<void> {
+    var formattedDate = this.createCurrentDateTimeStamp();
+    var truncatedTagText = tagStat.tag.tagText.substring(0, Constants.MAX_TAG_TEXT_LENGTH);
+    var filenameSanitized = FileNameSanitizer.sanitizeFileName(truncatedTagText);
+    var exportFileName = `tag-stat_${filenameSanitized}_${formattedDate}.csv`;
+
+    var csvExport = CsvTagStatExportModelMapper.mapToExportModel(tagStat);
+    var rowData = CsvTagStatExportModelMapper.mapToCsvRowData(csvExport);
+    //@ts-ignore: Papa parse
+    var csvString: string = Papa.unparse(rowData);
+
+    FileExporter.exportFile(exportFileName, csvString, FileEncoding.UTF_8_BOM);
   }
 
   async exportCsv(): Promise<void> {

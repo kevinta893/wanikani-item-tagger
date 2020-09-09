@@ -22,7 +22,7 @@ class TagInfoListView {
     this.tagInfoListElem = tagInfoElem.find('.tag-info-tag-stat-list');
   }
 
-  showTagStatsList(tagStats: TagStatsViewModel[]) {
+  showTagStatsList(tagStats: TagStatsViewModel[]): void {
     this.tagInfoListElem.children().remove();
 
     tagStats.forEach(tagStat => {
@@ -59,7 +59,7 @@ class TagInfoListView {
     });
   }
 
-  bindSelectionChanged(handler: (tagStat: TagStatsViewModel) => void) {
+  bindSelectionChanged(handler: (tagStat: TagStatsViewModel) => void): void {
     this.eventSelectionChanged.addEventListener(handler);
   }
 }

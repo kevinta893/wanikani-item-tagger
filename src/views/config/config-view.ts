@@ -77,12 +77,6 @@ class TagConfigView {
     this.tagInfoList.bindSelectionChanged((tagStat) => {
       this.tagInfoDisplay.showTagStats(tagStat);
     });
-
-    // Export csv for a single tag stat
-    this.tagInfoDisplay.bindCsvExported((tagStat) => {
-      //TODO
-      console.log('tagstat export requested');
-    });
   }
 
   showConfigModal(): void {
@@ -93,7 +87,7 @@ class TagConfigView {
     this.configModal.hide();
   }
 
-  showTagStats(tagStats: TagStatsViewModel[]) {
+  showTagStats(tagStats: TagStatsViewModel[]): void {
     this.tagInfoList.showTagStatsList(tagStats);
   }
 
@@ -122,5 +116,9 @@ class TagConfigView {
 
   bindOnConfigJSONExportRequested(handler: () => void): void {
     this.eventJSONExportRequested.addEventListener(handler);
+  }
+
+  bindOnConfigCsvTagStatExportRequested(handler: (tagStat) => void): void {
+    this.tagInfoDisplay.bindCsvExported(handler);
   }
 }

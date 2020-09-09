@@ -38,7 +38,7 @@ class TagInfoDisplay {
     });
   }
 
-  showTagStats(tagStat: TagStatsViewModel) {
+  showTagStats(tagStat: TagStatsViewModel): void {
     this.tagStatDisplayed = tagStat;
 
     this.tagInfoTitle.text(tagStat.tag.tagText);
@@ -72,7 +72,7 @@ class TagInfoDisplay {
     throw new Error(`Could not map item type=${itemType}`);
   }
 
-  bindCsvExported(handler: (tagStat: TagStatsViewModel) => void) {
+  bindCsvExported(handler: (tagStat: TagStatsViewModel) => void): void {
     this.eventCsvExported.addEventListener(handler);
   }
 }

@@ -57,11 +57,11 @@ class TagInfoItemView {
     return this.tagStat;
   }
 
-  bindClicked(handler: (tagStat: TagStatsViewModel) => void) {
+  bindClicked(handler: (tagStat: TagStatsViewModel) => void): void {
     this.eventClick.addEventListener(handler);
   }
 
-  bindHoverOver(handler: (tagStat: TagStatsViewModel) => void) {
+  bindHoverOver(handler: (tagStat: TagStatsViewModel) => void): void {
     this.eventHoverOver.addEventListener(handler);
   }
 }
