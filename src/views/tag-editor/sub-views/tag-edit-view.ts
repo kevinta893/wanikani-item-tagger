@@ -19,6 +19,7 @@ class TagEditView {
   private tagEditDeleteBtn: JQuery<HTMLButtonElement>;
   private tagEditSubmitBtn: JQuery<HTMLButtonElement>;
   private tagEditColorPicker: TagColorPickerView;
+  private tagEditDeleteConfirmModal: ConfirmModal;
 
   private tag: TagViewModel;
 
@@ -46,6 +47,13 @@ class TagEditView {
     this.tagEditDeleteBtn = $('#tag-edit-delete');
     this.tagEditSubmitBtn = $('#tag-edit-input-submit');
     this.tagEditColorPicker = new TagColorPickerView('#tag-edit-color-picker');
+    this.tagEditDeleteConfirmModal = new ConfirmModal({
+      messageText: "Are you sure you want to delete this tag?\nIt will be detached from all Review Items.",
+      okCallback: () => {
+        this.eventTagDeleted.emit(this.tag);
+      },
+      cancelCallback: () => { }
+    });
 
     //Disable tag enter button when text empty
     this.tagEditInput.on('input', (e) => {
@@ -78,7 +86,7 @@ class TagEditView {
 
     //Delete clicked
     this.tagEditDeleteBtn.on('click', (e) => {
-      this.eventTagDeleted.emit(this.tag);
+      this.tagEditDeleteConfirmModal.show('#tag-edit-delete');
     });
 
     //Color picked

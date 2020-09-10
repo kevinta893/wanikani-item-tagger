@@ -1,0 +1,23 @@
+.confirm-modal-container {
+  position: absolute;
+  background-color: #f1f1f1;
+  width: 22em;
+  box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+}
+
+.confirm-modal-text {
+  padding: 1em;
+  white-space: pre-line;
+}
+
+.confirm-modal-button {
+  margin-right: 1em;
+  margin-top: 0.5em;
+  margin-bottom: 1em;
+  float: right;
+}
+
+.confirm-modal-cancel {}
+
+.confirm-modal-ok {}
