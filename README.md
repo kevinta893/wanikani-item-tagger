@@ -47,6 +47,7 @@ This command requires *nodejs*, *npm*, and *gulp* to be installed. Note that bot
 
 Build with the ```npm run gulp``` or ```npm run gulp build``` command.
 
+No need to install gulp as a global package.
 
 ### Libraries Used
 

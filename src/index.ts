@@ -36,6 +36,7 @@ function initialize(): void {
 
   // Data services
   var dataContext = new TamperMonkeyUserDataContext();
+  var userConfigService = new UserConfigService(dataContext);
   var reviewItemRepository = new ReviewItemRepository(dataContext);
   var tagRepository = new TagRepository(dataContext);
   var tagService = new ReviewItemService(reviewItemRepository, tagRepository);
@@ -46,8 +47,7 @@ function initialize(): void {
 
   // Config UI
   var taggerConfigView = new TagConfigView();
-  var taggerConfigController = new TagConfigController(taggerConfigView, tagService);
+  var taggerConfigController = new TagConfigController(taggerConfigView, tagService, userConfigService);
 
-  //tagConfigView.onConfigOpen();
   console.log('Wanikani Item Tagger started.');
 }

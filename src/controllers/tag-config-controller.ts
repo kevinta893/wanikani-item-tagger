@@ -1,20 +1,26 @@
 class TagConfigController {
 
-  tagConfigView: TagConfigView;
-  reviewItemService: ReviewItemService;
+  private readonly tagConfigView: TagConfigView;
+  private readonly reviewItemService: ReviewItemService;
+  private readonly userConfigService: UserConfigService;
 
-  constructor(tagConfigView: TagConfigView, reviewItemService: ReviewItemService) {
+  constructor(tagConfigView: TagConfigView, reviewItemService: ReviewItemService, userConfigService: UserConfigService) {
     this.tagConfigView = tagConfigView;
     this.reviewItemService = reviewItemService;
+    this.userConfigService = userConfigService;
 
-    this.tagConfigView.bindOnConfigOpen(() => {
-      this.reviewItemService.getUserStats().then((userStats) => {
-        this.tagConfigView.showUserStats(userStats);
-      });
-      this.reviewItemService.getAllTagStats().then((tagStats) => {
-        this.tagConfigView.showTagStats(tagStats);
-      });
-      this.tagConfigView.showConfigModal();
+    this.tagConfigView.bindOnConfigOpen(async () => {
+      var configData: Promise<any>[] = [
+        this.reviewItemService.getUserStats(),
+        this.reviewItemService.getAllTagStats(),
+        this.userConfigService.getConfig()
+      ];
+
+      var [userStats, tagStats, userConfig] = await Promise.all(configData);
+
+      this.tagConfigView.showUserStats(userStats);
+      this.tagConfigView.showTagStats(tagStats);
+      this.tagConfigView.showConfigModal(userConfig);
     });
 
     this.tagConfigView.bindOnConfigClose(() => {
@@ -29,13 +35,18 @@ class TagConfigController {
       this.exportJson();
     });
 
-    this.reviewItemService.getAllTagStats().then((tagStats) => {
-      this.tagConfigView.showTagStats(tagStats);
+    this.tagConfigView.bindOnConfigChanged((userConfig) => {
+      this.userConfigService.updateConfig(userConfig);
     });
 
     // Export csv for a single tag stat
     this.tagConfigView.bindOnConfigCsvTagStatExportRequested((tagStat) => {
       this.exportTagStatCsv(tagStat);
+    });
+
+    // Load tag stats
+    this.reviewItemService.getAllTagStats().then((tagStats) => {
+      this.tagConfigView.showTagStats(tagStats);
     });
   }
 

@@ -14,6 +14,9 @@ class TagConfigView {
         Total Number of Tags <span id="tag-ui-tag-count" class="tag-ui-stat-value"></span>
       </p>
       <div>
+        <label>Always show tags during reviews/lessons: <input id="tag-config-always-show-tags-option" type="checkbox"></input></label>
+      </div>
+      <div>
         <div id="tag-info-list"></div>
         <div id="tag-info-display"></div>
       </div>
@@ -27,9 +30,14 @@ class TagConfigView {
   `;
 
   private readonly configModal: JQuery<HTMLElement>;
+
+  private userConfig: UserConfigModel
+  private readonly alwaysShowTagDuringReviewsCheckbox: JQuery<HTMLElement>;
+
   private readonly tagInfoList: TagInfoListView;
   private readonly tagInfoDisplay: TagInfoDisplay;
 
+  private readonly eventConfigChanged = new EventEmitter();
   private readonly eventModalOpened = new EventEmitter();
   private readonly eventModalClosed = new EventEmitter();
   private readonly eventCSVExportRequested = new EventEmitter();
@@ -45,11 +53,15 @@ class TagConfigView {
     this.tagInfoList = new TagInfoListView('#tag-info-list');
     this.tagInfoDisplay = new TagInfoDisplay('#tag-info-display');
 
+    this.alwaysShowTagDuringReviewsCheckbox = $('#tag-config-always-show-tags-option');
+
+    // Modal open
     var openConfigBtn = $('#tag-ui-open-config-btn');
     openConfigBtn.on('click', () => {
       this.eventModalOpened.emit();
     });
 
+    // Modal closed
     var closeBtn = $("#tag-ui-close-config-btn");
     closeBtn.on('click', () => {
       this.eventModalClosed.emit();
@@ -77,9 +89,19 @@ class TagConfigView {
     this.tagInfoList.bindSelectionChanged((tagStat) => {
       this.tagInfoDisplay.showTagStats(tagStat);
     });
+
+    // Always show tags config
+    this.alwaysShowTagDuringReviewsCheckbox.on('change', (e) => {
+      var isChecked = this.alwaysShowTagDuringReviewsCheckbox.is(':checked');
+      this.userConfig.alwaysShowTagsDuringReview = isChecked;
+      this.eventConfigChanged.emit(this.userConfig);
+    });
   }
 
-  showConfigModal(): void {
+  showConfigModal(userConfig: UserConfigModel): void {
+    this.userConfig = userConfig;
+    this.alwaysShowTagDuringReviewsCheckbox.prop('checked', userConfig.alwaysShowTagsDuringReview);
+
     this.configModal.show();
   }
 
@@ -120,5 +142,9 @@ class TagConfigView {
 
   bindOnConfigCsvTagStatExportRequested(handler: (tagStat) => void): void {
     this.tagInfoDisplay.bindCsvExported(handler);
+  }
+
+  bindOnConfigChanged(handler: (updatedConfig: UserConfigModel) => void) {
+    this.eventConfigChanged.addEventListener(handler);
   }
 }
