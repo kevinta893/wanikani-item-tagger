@@ -25,6 +25,20 @@ class TagInfoListView {
   showTagStatsList(tagStats: TagStatsViewModel[]): void {
     this.tagInfoListElem.children().remove();
 
+    //Sort by num review items
+    tagStats.sort(function (ts1, ts2) {
+      var ts1ReviewItemCount = ts1.taggedReviewItems.length;
+      var ts2ReviewItemCount = ts2.taggedReviewItems.length;
+
+      if (ts1ReviewItemCount < ts2ReviewItemCount) {
+        return 1;
+      }
+      if (ts1ReviewItemCount > ts2ReviewItemCount) {
+        return -1;
+      }
+      return 0;
+    })
+
     tagStats.forEach(tagStat => {
       var newTagInfoId = `tag-info-${tagStat.tag.tagId}`;
       var newTagInfoDetail = $(`<div id="${newTagInfoId}"><div>`)

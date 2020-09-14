@@ -22,7 +22,7 @@ class TagInfoItemView {
     tagInfoElem.attr('data-tag-id', tagStat.tag.tagId);
 
     var tagInfoTagElem = tagInfoElem.find('.tag-info-tag');
-    tagInfoTagElem.text(tagStat.tag.tagText);
+    tagInfoTagElem.text(`${tagStat.tag.tagText} | ${tagStat.taggedReviewItems.length}`);
     tagInfoTagElem.css('background-color', tagStat.tag.tagColor);
     this.setSelection(false);
 
