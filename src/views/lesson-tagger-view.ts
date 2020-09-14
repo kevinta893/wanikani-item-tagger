@@ -11,16 +11,22 @@ class LessonTaggerView implements TagView {
     </div>
   `;
 
+  private quizInput: JQuery<HTMLElement>;
+
   private tagListView: TagListView;
   private tagEditorView: TagEditorView;
 
   private reviewItem: ReviewItemViewModel;
 
+  private readonly userConfig: UserConfigModel;
+
   private readonly eventTagAdded = new EventEmitter();
   private readonly eventTagRemoved = new EventEmitter();
   private readonly eventTagReviewItemChanged = new EventEmitter();
 
-  constructor() {
+  constructor(userConfig: UserConfigModel) {
+    this.userConfig = userConfig;
+
     //Configure the UI for the definition page
     var rootElement = $('body');
     var tagContainer = rootElement.append(this.html);
@@ -51,6 +57,11 @@ class LessonTaggerView implements TagView {
       var xPos = position.left;
       var yPos = position.top + buttonHeight;
       this.tagEditorView.toggleEditorView(xPos, yPos);
+    });
+
+    this.quizInput = $('#answer-form > form > fieldset');
+    ClassChangedObserver.attachClassChangedEvent(this.quizInput, (classValue) => {
+      this.submissionChanged(classValue);
     });
 
     //Review item changed event
@@ -104,6 +115,18 @@ class LessonTaggerView implements TagView {
     wkItemData.itemType = itemType;
 
     return wkItemData;
+  }
+
+  private submissionChanged(classValue: string): void {
+    if (this.userConfig.alwaysShowTagsDuringReview) {
+      return;
+    }
+
+    if (classValue == '') {
+      this.tagListView.hide();
+    } else {
+      this.tagListView.show();
+    }
   }
 
   getCurrentWkItemData(): WanikaniItemDataModel {

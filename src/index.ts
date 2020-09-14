@@ -26,7 +26,7 @@
 
 
 //Loads user script
-function initialize(): void {
+async function initialize(): Promise<void> {
   // CSS
   UserscriptCSSLoader.loadUserScriptCss();
 
@@ -37,12 +37,13 @@ function initialize(): void {
   // Data services
   var dataContext = new TamperMonkeyUserDataContext();
   var userConfigService = new UserConfigService(dataContext);
+  var userConfig = await userConfigService.getConfig();
   var reviewItemRepository = new ReviewItemRepository(dataContext);
   var tagRepository = new TagRepository(dataContext);
   var tagService = new ReviewItemService(reviewItemRepository, tagRepository);
 
   // UI
-  var tagView = TaggerUiFactory.createTaggerUi();
+  var tagView = TaggerUiFactory.createTaggerUi(userConfig);
   var taggerController = new TaggerController(tagView, tagService);
 
   // Config UI

@@ -3,16 +3,16 @@
  * that the script is current on
  */
 class TaggerUiFactory {
-  static createTaggerUi(): TagView {
+  static createTaggerUi(userConfig: UserConfigModel): TagView {
     //Create UI (depending on page)
     var pageUrl = window.location.href;
 
     if (pageUrl.indexOf('wanikani.com/review/session') >= 0) {
-      return new ReviewTaggerView();
+      return new ReviewTaggerView(userConfig);
     }
 
     if (pageUrl.indexOf('wanikani.com/lesson/session') >= 0) {
-      return new LessonTaggerView();
+      return new LessonTaggerView(userConfig);
     }
 
     if (
