@@ -25,6 +25,6 @@ class TaggerUiFactory {
     }
 
     //No match
-    throw new Error('Cannot create UI, invalid page.');
+    return new NullTaggerView();
   }
 }

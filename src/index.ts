@@ -4,6 +4,9 @@
 // @author      kevinta893
 // @description Allows you to tag, classify, and organize review items in WaniKani
 // @run-at      document-end
+// @license     MIT; http://opensource.org/licenses/MIT
+// @include     https://www.wanikani.com/
+// @include     https://www.wanikani.com/dashboard
 // @include     https://www.wanikani.com/review/session
 // @include     https://www.wanikani.com/lesson/session
 // @include     https://www.wanikani.com/radicals/*
@@ -47,7 +50,8 @@ async function initialize(): Promise<void> {
   var taggerController = new TaggerController(tagView, tagService);
 
   // Config UI
-  var taggerConfigView = new TagConfigView();
+  var openConfigButtonSelector = TagConfigLauncherFactory.createConfigUi().getOpenConfigButtonId();
+  var taggerConfigView = new TagConfigView(openConfigButtonSelector);
   var taggerConfigController = new TagConfigController(taggerConfigView, tagService, userConfigService);
 
   console.log('Wanikani Item Tagger started.');

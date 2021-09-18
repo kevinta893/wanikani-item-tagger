@@ -1,8 +1,6 @@
 class TagConfigView {
 
   private readonly html = `
-  <span id="tag-ui-open-config-btn">&#x2699;</span>
-  
   <div id="tag-ui-config-modal">
     <div id="tag-ui-config-modal-content">
       <span id="tag-ui-close-config-btn">&times;</span>
@@ -29,6 +27,11 @@ class TagConfigView {
   </div>
   `;
 
+  private readonly openConfigHtml = `
+    <span id="tag-ui-open-config-btn">&#x2699;</span>
+  `;
+
+  private readonly openConfigButton: JQuery<HTMLElement>;
   private readonly configModal: JQuery<HTMLElement>;
 
   private userConfig: UserConfigModel
@@ -43,8 +46,10 @@ class TagConfigView {
   private readonly eventCSVExportRequested = new EventEmitter();
   private readonly eventJSONExportRequested = new EventEmitter();
 
-  constructor() {
+  constructor(openConfigBtnSelector: string) {
     $('body').append(this.html);
+    this.openConfigButton = $(this.openConfigHtml);
+    $(openConfigBtnSelector).replaceWith(this.openConfigButton);
 
     // Get the modal
     var configModal = $('#tag-ui-config-modal');
